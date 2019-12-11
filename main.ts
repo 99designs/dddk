@@ -1,6 +1,7 @@
 import * as api from "./src/api";
 import { descriptionTag } from "./src/app";
 import bastion from "./99designs/apps/bastion";
+import spa from "./99designs/apps/spa";
 
 const client = new api.Client(
   process.env["DD_API_KEY"],
@@ -14,7 +15,7 @@ const client = new api.Client(
 
   console.log(dashboards);
 
-  const existing = dashboards.find(d => d.title == bastion.component.title);
+  const existing = dashboards.find(d => d.title == spa.component.title);
 
-  console.log(await client.updateDashboard(existing.id, bastion.component));
+  console.log(await client.updateDashboard(existing.id, spa.component));
 })();

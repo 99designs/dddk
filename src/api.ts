@@ -92,14 +92,14 @@ export interface Layout {
 export interface Request {
   q: string;
   style?: Style;
-  metadata?: Metadata;
+  metadata?: Metadata[];
   display_type?: "area" | "bars" | "line";
 }
 
 export interface ApmRequest {
   apm_query: ApmQuery;
   style?: Style;
-  metadata?: Metadata;
+  metadata?: Metadata[];
   display_type?: "area" | "bars" | "line";
 }
 
