@@ -7,7 +7,7 @@ export interface WidgetWrapper {
   component?: api.WidgetDefinition;
 }
 
-export type WidgetDefinition = api.TimeSeries | api.Group | WidgetWrapper;
+export type WidgetDefinition = api.WidgetDefinition | WidgetWrapper;
 
 export interface Container {
   addWidget(name: string, widget: WidgetDefinition);

@@ -61,6 +61,12 @@ export interface TimeSeries {
   title?: string;
 }
 
+export interface TopList {
+  type: "toplist";
+  requests: (Request | ApmRequest)[];
+  title?: string;
+}
+
 export interface Group {
   type: "group";
   layout_type: "ordered";
@@ -68,7 +74,7 @@ export interface Group {
   widgets: Widget[];
 }
 
-export type WidgetDefinition = TimeSeries | Group;
+export type WidgetDefinition = TimeSeries | TopList | Group;
 
 export interface Widget {
   definition: WidgetDefinition;
@@ -109,11 +115,13 @@ export interface ApmQuery {
       sort: {
         order: string;
         aggregation: string;
+        facet?: string;
       };
     }
   ];
   compute: {
     aggregation: string;
+    facet?: string;
   };
 }
 
@@ -134,14 +142,14 @@ export interface Metadata {
 
 export interface Marker {
   value: string;
-  display_type?: string;
+  display_type?: "info dashed" | "warning dashed" | "error dashed";
   label?: string;
 }
 
 export interface Axis {
   scale?: string;
-  min?: number;
-  max?: number;
+  min?: string;
+  max?: string;
   include_zero?: boolean;
 }
 

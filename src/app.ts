@@ -29,14 +29,14 @@ export class App implements Container {
 
   addWidget(title: string, widget: WidgetDefinition) {
     if (widget.type === "wrapper") {
-      this.component.widgets.push({
+      this.component.widgets.unshift({
         definition: {
           ...widget.component,
           title: title
         }
       });
     } else {
-      this.component.widgets.push({
+      this.component.widgets.unshift({
         definition: {
           ...widget,
           title: title
