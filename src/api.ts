@@ -1,4 +1,56 @@
+/**
+ * These are the raw types expected by the datadog api, and a client for interacting with it.
+ */
+
 import got, { Method } from "got";
+
+export class Client {
+  private readonly apiKey: string;
+  private readonly applicationKey: string;
+
+  constructor(apiKey: string, applicationKey: string) {
+    this.apiKey = apiKey;
+    this.applicationKey = applicationKey;
+  }
+
+  async getDashboards() {
+    const res = await this.do<{ dashboards: DashboardSummary[] }>(
+      "GET",
+      "/v1/dashboard"
+    );
+    return res.dashboards;
+  }
+
+  async createDashboard(dashboard: Dashboard) {
+    return this.do<any>("POST", "/v1/dashboard", dashboard);
+  }
+
+  async updateDashboard(id: string, dashboard: Dashboard) {
+    return this.do<any>("PUT", `/v1/dashboard/${id}`, dashboard);
+  }
+
+  private async do<T>(method: Method, url: string, body?: any): Promise<T> {
+    try {
+      const resp = await got("https://api.datadoghq.com/api" + url, {
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "github.com/99designs/ddac",
+          "DD-API-KEY": this.apiKey,
+          "DD-APPLICATION-KEY": this.applicationKey
+        },
+        method: method,
+        body: body ? JSON.stringify(body, null, " ") : undefined
+      });
+      return JSON.parse(resp.body) as T;
+    } catch (error) {
+      if (error.response && error.response.body) {
+        throw "error calling datadog api: " + error.response.body;
+      } else {
+        throw error;
+      }
+    }
+  }
+}
 
 export interface TimeSeries {
   type: "timeseries";
@@ -120,52 +172,4 @@ export interface DashboardSummary {
   modified_at: string;
   author_handle: string;
   id: string;
-}
-
-export class Client {
-  private readonly apiKey: string;
-  private readonly applicationKey: string;
-
-  constructor(apiKey: string, applicationKey: string) {
-    this.apiKey = apiKey;
-    this.applicationKey = applicationKey;
-  }
-
-  async getDashboards() {
-    const res = await this.do<{ dashboards: DashboardSummary[] }>(
-      "GET",
-      "/v1/dashboard"
-    );
-    return res.dashboards;
-  }
-
-  async createDashboard(dashboard: Dashboard) {
-    return this.do<any>("POST", "/v1/dashboard", dashboard);
-  }
-
-  async updateDashboard(id: string, dashboard: Dashboard) {
-    return this.do<any>("PUT", `/v1/dashboard/${id}`, dashboard);
-  }
-
-  private async do<T>(method: Method, url: string, body?: any): Promise<T> {
-    try {
-      const resp = await got("https://api.datadoghq.com/api" + url, {
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "github.com/99designs/ddac",
-          "DD-API-KEY": this.apiKey,
-          "DD-APPLICATION-KEY": this.applicationKey
-        },
-        method: method,
-        body: body ? JSON.stringify(body, null, " ") : undefined
-      });
-      return JSON.parse(resp.body) as T;
-    } catch (error) {
-      if (error.response && error.response.body) {
-        throw "error calling datadog api: " + error.response.body;
-      } else {
-        throw error;
-      }
-    }
-  }
 }
