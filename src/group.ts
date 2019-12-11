@@ -1,34 +1,29 @@
-import * as api from "./api";
-import { Container, WidgetDefinition, WidgetWrapper } from "./types";
+import { Component, Container } from "./types";
+import { Group, TimeSeries, TopList } from "./api";
 
-export class Group implements Container, WidgetWrapper {
-  type: "wrapper" = "wrapper";
-  component: api.Group;
-
-  constructor() {
-    this.component = {
-      title: "",
+export default function Group(name: string, children: Component[]): Component {
+  return container => {
+    const group: Group = {
       layout_type: "ordered",
       type: "group",
       widgets: []
     };
-  }
 
-  addWidget(title: string, widget: WidgetDefinition) {
-    if (widget.type === "wrapper") {
-      this.component.widgets.push({
-        definition: {
-          ...widget.component,
-          title: title
-        }
-      });
-    } else {
-      this.component.widgets.push({
-        definition: {
-          ...widget,
-          title: title
-        }
-      });
+    const groupContainer: Container = {
+      addWidget(name: string, widget: TimeSeries | TopList | Group) {
+        group.widgets.push({
+          definition: {
+            ...widget,
+            title: name
+          }
+        });
+      }
+    };
+
+    for (const child of children) {
+      child(groupContainer);
     }
-  }
+
+    return container.addWidget(name, group);
+  };
 }

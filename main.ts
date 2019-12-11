@@ -1,5 +1,5 @@
 import * as api from "./src/api";
-import { descriptionTag } from "./src/app";
+import { App, descriptionTag } from "./src/app";
 import bastion from "./99designs/apps/bastion";
 import spa from "./99designs/apps/spa";
 
@@ -13,9 +13,19 @@ const client = new api.Client(
     d => d.description && d.description.includes(descriptionTag)
   );
 
-  console.log(dashboards);
+  async function push(app: App) {
+    const existing = dashboards.find(d => d.title == app.component.title);
 
-  const existing = dashboards.find(d => d.title == spa.component.title);
+    if (existing) {
+      console.log(`Updating existing dashboard for ${app.component.title}`);
+      return await client.updateDashboard(existing.id, app.component);
+    } else {
+      console.log(`Creating new dashboard for ${app.component.title}`);
+      return await client.createDashboard(app.component);
+    }
+  }
 
-  console.log(await client.updateDashboard(existing.id, spa.component));
+  await push(bastion);
+  await push(spa);
+  console.log("done!");
 })();

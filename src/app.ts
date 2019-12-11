@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { Component, Container, WidgetDefinition } from "./types";
+import { Component, Container } from "./types";
 
 export const descriptionTag = "managed by [ddac](github.com/99designs/ddac)";
 
@@ -27,21 +27,12 @@ export class App implements Container {
     }
   }
 
-  addWidget(title: string, widget: WidgetDefinition) {
-    if (widget.type === "wrapper") {
-      this.component.widgets.unshift({
-        definition: {
-          ...widget.component,
-          title: title
-        }
-      });
-    } else {
-      this.component.widgets.unshift({
-        definition: {
-          ...widget,
-          title: title
-        }
-      });
-    }
+  addWidget(title: string, widget: api.WidgetDefinition) {
+    this.component.widgets.push({
+      definition: {
+        ...widget,
+        title: title
+      }
+    });
   }
 }
