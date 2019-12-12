@@ -3,9 +3,7 @@ import { App, descriptionTag } from "./src/app";
 import bastion from "./99designs/apps/bastion";
 import spa from "./99designs/apps/spa";
 import payouts from "./99designs/apps/payouts";
-
-// const flatMap = require("array.prototype.flatmap");
-// flatMap.shim();
+import events from "./99designs/apps/events";
 
 const client = new api.Client(
   process.env["DD_API_KEY"],
@@ -29,7 +27,8 @@ const client = new api.Client(
     }
   }
 
-  await push(payouts);
+  await push(events);
+  // await push(payouts);
   // await push(bastion);
   // await push(spa);
   console.log("done!");
