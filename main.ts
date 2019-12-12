@@ -4,6 +4,7 @@ import bastion from "./99designs/apps/bastion";
 import spa from "./99designs/apps/spa";
 import payouts from "./99designs/apps/payouts";
 import events from "./99designs/apps/events";
+import admin from "./99designs/apps/admin";
 
 const client = new api.Client(
   process.env["DD_API_KEY"],
@@ -27,7 +28,8 @@ const client = new api.Client(
     }
   }
 
-  await push(events);
+  await push(admin);
+  // await push(events);
   // await push(payouts);
   // await push(bastion);
   // await push(spa);
