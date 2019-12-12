@@ -1,10 +1,26 @@
 import * as api from "./src/api";
 import { App, descriptionTag } from "./src/app";
-import bastion from "./99designs/apps/bastion";
-import spa from "./99designs/apps/spa";
-import payouts from "./99designs/apps/payouts";
-import events from "./99designs/apps/events";
-import admin from "./99designs/apps/admin";
+import * as yargs from "yargs";
+import * as path from "path";
+
+const args = yargs
+  .command("push <apps>", "push datadog dashboards up")
+  .option("name", {
+    type: "string",
+    description: "only push the matching app name"
+  })
+  .demandCommand();
+
+const appFile = path.resolve(args.argv.apps as string);
+const apps = require(appFile);
+
+if (!process.env["DD_API_KEY"] || !process.env["DD_APP_KEY"]) {
+  console.error(
+    "MISSING API KEYS - run again using \n" +
+      "  aws-vault exec platform -- chamber exec ddac -- npm run sync\n\n"
+  );
+  process.exit(1);
+}
 
 const client = new api.Client(
   process.env["DD_API_KEY"],
@@ -28,10 +44,14 @@ const client = new api.Client(
     }
   }
 
-  await push(admin);
-  // await push(events);
-  // await push(payouts);
-  // await push(bastion);
-  // await push(spa);
+  for (const app of apps.default) {
+    if (
+      args.argv.name &&
+      args.argv.name.toLowerCase() !== app.component.title.toLowerCase()
+    ) {
+      continue;
+    }
+    await push(app);
+  }
   console.log("done!");
 })();
