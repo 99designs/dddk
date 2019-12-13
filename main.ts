@@ -37,10 +37,12 @@ const client = new api.Client(
 
     if (existing) {
       console.log(`Updating existing dashboard for ${app.component.title}`);
-      return await client.updateDashboard(existing.id, app.component);
+      await client.updateDashboard(existing.id, app.component);
+      console.log(" - https://app.datadoghq.com/dashboard/" + existing.id);
     } else {
       console.log(`Creating new dashboard for ${app.component.title}`);
-      return await client.createDashboard(app.component);
+      const board = await client.createDashboard(app.component);
+      console.log(" - https://app.datadoghq.com/dashboard/" + board.id);
     }
   }
 
