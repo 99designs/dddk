@@ -2,7 +2,7 @@ import * as api from "./src/api";
 import { App, descriptionTag } from "./src/app";
 import * as yargs from "yargs";
 import * as path from "path";
-import { Monitor, SLO } from "./src/api";
+import { Monitor, SLO, Synthetic } from "./src/api";
 
 const args = yargs
   .command("push <apps>", "push datadog dashboards up")
@@ -38,6 +38,9 @@ const client = new api.Client(
   const slos = (await client.getSLOs()).filter(
     d => d.tags && d.tags.find(t => t == "created_by:ddac")
   );
+  const synthetics = (await client.getSynthetics()).filter(
+    d => d.tags && d.tags.find(t => t == "created_by:ddac")
+  );
 
   async function pushDashboard(app: App) {
     const existing = dashboards.find(d => d.title == app.board.title);
@@ -65,6 +68,20 @@ const client = new api.Client(
     }
   }
 
+  async function pushSynthetic(syn: Synthetic) {
+    const existing = synthetics.find(d => d.name == syn.name);
+
+    if (existing) {
+      console.log(` - Updating synthetic ${syn.name}`);
+      await client.updateSynthetic(existing.public_id, syn);
+      return existing.public_id;
+    } else {
+      console.log(` - Creating synthetic ${syn.name}`);
+      const res = await client.createSynthetic(syn);
+      return res.public_id;
+    }
+  }
+
   async function pushSLO(slo: SLO) {
     const existing = slos.find(d => d.name == slo.name);
 
@@ -80,11 +97,27 @@ const client = new api.Client(
   }
 
   async function pushMonitors(app: App) {
+    let outageMonitors: number[] = [];
+    for (const syn of app.synthetics) {
+      await pushSynthetic(syn);
+
+      // the api filter doesnt work.
+      const syntheticMonitor = (await client.getMonitors()).filter(
+        d =>
+          d.tags &&
+          d.tags.find(t => t == "created_by:ddac") &&
+          d.name == "[Synthetics] " + syn.name
+      );
+
+      if (syntheticMonitor.length == 1) {
+        outageMonitors.push(syntheticMonitor[0].id);
+      }
+    }
+
     for (const monitor of app.warningMonitors) {
       await pushMonitor(monitor);
     }
 
-    let outageMonitors: number[] = [];
     for (const monitor of app.outageMonitors) {
       outageMonitors.push(await pushMonitor(monitor));
     }
@@ -107,8 +140,8 @@ const client = new api.Client(
     ) {
       continue;
     }
-    await pushDashboard(app);
     await pushMonitors(app);
+    await pushDashboard(app);
   }
   console.log("done!");
 })();

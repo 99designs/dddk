@@ -1,6 +1,6 @@
 import * as api from "./api";
 import { Component, Container } from "./types";
-import { Monitor } from "./api";
+import { Monitor, Synthetic } from "./api";
 import { stripIndent } from "./stripIndent";
 
 export const descriptionTag = "managed by [ddac](github.com/99designs/ddac)";
@@ -10,6 +10,7 @@ export class App implements Container {
   board: api.Dashboard;
   warningMonitors: Monitor[];
   outageMonitors: Monitor[];
+  synthetics: Synthetic[];
 
   constructor({
     name,
@@ -29,6 +30,7 @@ export class App implements Container {
     };
     this.warningMonitors = [];
     this.outageMonitors = [];
+    this.synthetics = [];
 
     for (const component of components) {
       component(this);
@@ -56,6 +58,15 @@ export class App implements Container {
   addWarningMonitor(name: string, { tags, message, ...monitor }: Monitor) {
     this.warningMonitors.push({
       ...monitor,
+      name: name,
+      message: stripIndent(message),
+      tags: ["service:" + this.name.toLowerCase(), "created_by:ddac"]
+    });
+  }
+
+  addSynthetic(name: string, { tags, message, ...syn }: api.Synthetic) {
+    this.synthetics.push({
+      ...syn,
       name: name,
       message: stripIndent(message),
       tags: ["service:" + this.name.toLowerCase(), "created_by:ddac"]

@@ -29,8 +29,11 @@ export class Client {
     return this.do<any>("PUT", `/v1/dashboard/${id}`, dashboard);
   }
 
-  async getMonitors() {
-    return await this.do<Monitor[]>("GET", "/v1/monitor");
+  async getMonitors(query?: string) {
+    if (query) {
+      query = "&query=" + encodeURIComponent(query);
+    }
+    return await this.do<Monitor[]>("GET", "/v1/monitor?per_page=1000" + query);
   }
 
   async createMonitor(monitor: Monitor) {
@@ -39,6 +42,22 @@ export class Client {
 
   async updateMonitor(id: number, monitor: Monitor) {
     return this.do<{ data: Monitor }>("PUT", `/v1/monitor/${id}`, monitor);
+  }
+
+  async getSynthetics() {
+    const res = await this.do<{ tests: Synthetic[] }>(
+      "GET",
+      `/v1/synthetics/tests`
+    );
+    return res.tests;
+  }
+
+  async createSynthetic(syn: Synthetic) {
+    return this.do<Synthetic>("POST", `/v1/synthetics/tests`, syn);
+  }
+
+  async updateSynthetic(id: string, syn: Synthetic) {
+    return this.do<{ data: Monitor }>("PUT", `/v1/synthetics/tests/${id}`, syn);
   }
 
   async getSLOs(query: string = "") {
@@ -284,3 +303,65 @@ export interface DashboardSummary {
   author_handle: string;
   id: string;
 }
+
+type Location =
+  | "aws:ap-northeast-1"
+  | "aws:ap-northeast-2"
+  | "aws:ap-south-1"
+  | "aws:ap-southeast-1"
+  | "aws:ap-southeast-2"
+  | "aws:ca-central-1"
+  | "aws:eu-central-1"
+  | "aws:eu-west-1"
+  | "aws:eu-west-2"
+  | "aws:sa-east-1"
+  | "aws:us-east-2"
+  | "aws:us-west-1"
+  | "aws:us-west-2";
+
+export interface Options {
+  tick_every: number;
+  min_failure_duration?: number;
+  min_location_failed?: number;
+  follow_redirects?: boolean;
+  device_ids?: Device[];
+}
+
+interface Assertion {
+  operator: string;
+  type: "statusCode" | "responseCode" | "header";
+  property?: string;
+  target: any;
+}
+
+type Device = "laptop_large" | "tablet" | "mobile_small";
+
+export interface HttpSynthetic {
+  public_id?: string;
+  name?: string;
+  type: "api";
+  subtype?: "http" | "ssl";
+  locations: Location[];
+  tags?: string[];
+  options: Options;
+  config: {
+    assertions: Assertion[];
+    request: {
+      method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+      url: string;
+      basicAuth?: {
+        username: string;
+        password: string;
+      };
+      timeout?: number;
+      headers?: { [k: string]: string };
+      cookies?: { [k: string]: string };
+      body?: string;
+      port?: number;
+      host?: string;
+    };
+  };
+  message: string;
+}
+
+export type Synthetic = HttpSynthetic;

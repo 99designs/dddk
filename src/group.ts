@@ -1,5 +1,5 @@
 import { Component, Container } from "./types";
-import { Group, Monitor, TimeSeries, TopList } from "./api";
+import { Group, Monitor, Synthetic, TimeSeries, TopList } from "./api";
 
 export default function Group(name: string, children: Component[]): Component {
   return container => {
@@ -10,11 +10,15 @@ export default function Group(name: string, children: Component[]): Component {
     };
 
     const groupContainer: Container = {
+      name: name,
       addWarningMonitor(name: string, monitor: Monitor) {
         container.addWarningMonitor(name, monitor);
       },
       addOutageMonitor(name: string, monitor: Monitor) {
         container.addOutageMonitor(name, monitor);
+      },
+      addSynthetic(name: string, syn: Synthetic) {
+        container.addSynthetic(name, syn);
       },
       addWidget(name: string, widget: TimeSeries | TopList | Group) {
         group.widgets.push({
