@@ -2,6 +2,7 @@ import * as api from "./api";
 import { Component, Container } from "./types";
 import { Monitor, Synthetic } from "./api";
 import { stripIndent } from "./stripIndent";
+import { Team } from "./team";
 
 export const descriptionTag = "managed by [ddac](github.com/99designs/ddac)";
 
@@ -11,14 +12,15 @@ export class App implements Container {
   warningMonitors: Monitor[];
   outageMonitors: Monitor[];
   synthetics: Synthetic[];
+  team: Team;
 
   constructor({
     name,
-    slack,
+    team,
     components
   }: {
     name: string;
-    slack: string;
+    team: Team;
     components: Component[];
   }) {
     this.name = name;
@@ -28,6 +30,7 @@ export class App implements Container {
       layout_type: "ordered",
       widgets: []
     };
+    this.team = team;
     this.warningMonitors = [];
     this.outageMonitors = [];
     this.synthetics = [];
@@ -50,7 +53,12 @@ export class App implements Container {
     this.outageMonitors.push({
       ...monitor,
       name: name,
-      message: stripIndent(message),
+      message:
+        stripIndent(message) +
+        " " +
+        this.team.pagerdutyGroup +
+        " " +
+        this.team.slackGroup,
       tags: ["service:" + this.name.toLowerCase(), "created_by:ddac"]
     });
   }
@@ -59,7 +67,7 @@ export class App implements Container {
     this.warningMonitors.push({
       ...monitor,
       name: name,
-      message: stripIndent(message),
+      message: stripIndent(message) + " " + this.team.slackGroup,
       tags: ["service:" + this.name.toLowerCase(), "created_by:ddac"]
     });
   }
@@ -68,7 +76,12 @@ export class App implements Container {
     this.synthetics.push({
       ...syn,
       name: name,
-      message: stripIndent(message),
+      message:
+        stripIndent(message) +
+        " " +
+        this.team.pagerdutyGroup +
+        " " +
+        this.team.slackGroup,
       tags: ["service:" + this.name.toLowerCase(), "created_by:ddac"]
     });
   }
