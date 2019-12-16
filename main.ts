@@ -127,7 +127,7 @@ const client = new api.Client(
         name: `${app.name} SLO`,
         description: `Track the uptime of ${app.name}`,
         monitor_ids: outageMonitors,
-        thresholds: [{ timeframe: "30d", target: 99, warning: 99.9 }],
+        thresholds: [{ timeframe: "30d", target: 99.9, warning: 99.95 }],
         tags: [`service:${app.name}`, "created_by:ddac"]
       });
     }
