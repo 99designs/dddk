@@ -4,4 +4,6 @@ export type Component = (container: Container) => void;
 
 export interface Container {
   addWidget(name: string, widget: api.WidgetDefinition);
+  addWarningMonitor(name: string, monitor: api.Monitor);
+  addOutageMonitor(name: string, monitor: api.Monitor);
 }

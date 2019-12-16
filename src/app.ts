@@ -1,10 +1,15 @@
 import * as api from "./api";
 import { Component, Container } from "./types";
+import { Monitor } from "./api";
+import { stripIndent } from "./stripIndent";
 
 export const descriptionTag = "managed by [ddac](github.com/99designs/ddac)";
 
 export class App implements Container {
-  component: api.Dashboard;
+  name: string;
+  board: api.Dashboard;
+  warningMonitors: Monitor[];
+  outageMonitors: Monitor[];
 
   constructor({
     name,
@@ -15,12 +20,15 @@ export class App implements Container {
     slack: string;
     components: Component[];
   }) {
-    this.component = {
+    this.name = name;
+    this.board = {
       title: name,
       description: descriptionTag,
       layout_type: "ordered",
       widgets: []
     };
+    this.warningMonitors = [];
+    this.outageMonitors = [];
 
     for (const component of components) {
       component(this);
@@ -28,11 +36,29 @@ export class App implements Container {
   }
 
   addWidget(title: string, widget: api.WidgetDefinition) {
-    this.component.widgets.push({
+    this.board.widgets.push({
       definition: {
         ...widget,
         title: title
       }
+    });
+  }
+
+  addOutageMonitor(name: string, { tags, message, ...monitor }: Monitor) {
+    this.outageMonitors.push({
+      ...monitor,
+      name: name,
+      message: stripIndent(message),
+      tags: ["service:" + this.name.toLowerCase(), "created_by:ddac"]
+    });
+  }
+
+  addWarningMonitor(name: string, { tags, message, ...monitor }: Monitor) {
+    this.warningMonitors.push({
+      ...monitor,
+      name: name,
+      message: stripIndent(message),
+      tags: ["service:" + this.name.toLowerCase(), "created_by:ddac"]
     });
   }
 }

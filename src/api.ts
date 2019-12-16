@@ -29,6 +29,45 @@ export class Client {
     return this.do<any>("PUT", `/v1/dashboard/${id}`, dashboard);
   }
 
+  async getMonitors() {
+    return await this.do<Monitor[]>("GET", "/v1/monitor");
+  }
+
+  async createMonitor(monitor: Monitor) {
+    return this.do<any>("POST", `/v1/monitor`, monitor);
+  }
+
+  async updateMonitor(id: number, monitor: Monitor) {
+    return this.do<{ data: Monitor }>("PUT", `/v1/monitor/${id}`, monitor);
+  }
+
+  async getSLOs(query: string = "") {
+    if (query) {
+      query = "&query=" + encodeURIComponent(`"${query}"`);
+    }
+
+    const res = await this.do<{
+      data: SLO[];
+      error?: any;
+    }>("GET", "/v1/slo?limit=1000" + query);
+
+    if (res.error) {
+      throw res.error;
+    }
+
+    return res.data;
+  }
+
+  async createSLO(slo: SLO) {
+    const res = await this.do<{ data: Monitor }>("POST", `/v1/slo`, slo);
+    return res.data;
+  }
+
+  async updateSLO(id: string, slo: SLO) {
+    const res = await this.do<{ data: Monitor }>("PUT", `/v1/slo/${id}`, slo);
+    return res.data;
+  }
+
   private async do<T>(method: Method, url: string, body?: any): Promise<T> {
     try {
       const resp = await got("https://api.datadoghq.com/api" + url, {
@@ -51,6 +90,70 @@ export class Client {
     }
   }
 }
+
+export interface QueryMonitor {
+  id?: number;
+  type: "query alert";
+  query: string;
+  name?: string;
+  message: string;
+  tags?: string[];
+  options: MonitorOptions;
+}
+
+export interface MetricMonitor {
+  id?: number;
+  type: "metric alert";
+  query: string;
+  name?: string;
+  message: string;
+  tags?: string[];
+  options: MonitorOptions;
+}
+
+export interface MonitorOptions {
+  notify_audit?: boolean;
+  locked?: boolean;
+  timeout_h?: number;
+  silenced?: any;
+  include_tags?: boolean;
+  no_data_timeframe?: number;
+  require_full_window?: boolean;
+  new_host_delay?: number;
+  evaluation_delay?: number;
+  notify_no_data?: boolean;
+  renotify_interval?: number;
+  escalation_message?: string;
+  thresholds?: {
+    critical?: number;
+    warning?: number;
+  };
+}
+
+export type Monitor = QueryMonitor | MetricMonitor;
+
+export interface Threshold {
+  timeframe: string;
+  target: number;
+  target_display?: string;
+  warning?: number;
+  warning_display?: string;
+}
+
+export interface MonitorSLO {
+  id?: string;
+  name?: string;
+  description: string;
+  tags?: string[];
+  thresholds: Threshold[];
+  type: "monitor";
+  monitor_ids: number[];
+  groups?: string[];
+  created?: Date;
+  modified?: Date;
+}
+
+export type SLO = MonitorSLO;
 
 export interface TimeSeries {
   type: "timeseries";

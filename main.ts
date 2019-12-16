@@ -2,6 +2,7 @@ import * as api from "./src/api";
 import { App, descriptionTag } from "./src/app";
 import * as yargs from "yargs";
 import * as path from "path";
+import { Monitor, SLO } from "./src/api";
 
 const args = yargs
   .command("push <apps>", "push datadog dashboards up")
@@ -31,29 +32,83 @@ const client = new api.Client(
   const dashboards = (await client.getDashboards()).filter(
     d => d.description && d.description.includes(descriptionTag)
   );
+  const monitors = (await client.getMonitors()).filter(
+    d => d.tags && d.tags.find(t => t == "created_by:ddac")
+  );
+  const slos = (await client.getSLOs()).filter(
+    d => d.tags && d.tags.find(t => t == "created_by:ddac")
+  );
 
-  async function push(app: App) {
-    const existing = dashboards.find(d => d.title == app.component.title);
+  async function pushDashboard(app: App) {
+    const existing = dashboards.find(d => d.title == app.board.title);
 
     if (existing) {
-      console.log(`Updating existing dashboard for ${app.component.title}`);
-      await client.updateDashboard(existing.id, app.component);
-      console.log(" - https://app.datadoghq.com/dashboard/" + existing.id);
+      console.log(` - Updating dashboard ${app.board.title}`);
+      await client.updateDashboard(existing.id, app.board);
     } else {
-      console.log(`Creating new dashboard for ${app.component.title}`);
-      const board = await client.createDashboard(app.component);
-      console.log(" - https://app.datadoghq.com/dashboard/" + board.id);
+      console.log(` - Creating dashboard ${app.board.title}`);
+      await client.createDashboard(app.board);
+    }
+  }
+
+  async function pushMonitor(monitor: Monitor): Promise<number> {
+    const existing = monitors.find(d => d.name == monitor.name);
+
+    if (existing) {
+      console.log(` - Updating monitor ${monitor.name}`);
+      await client.updateMonitor(existing.id, monitor);
+      return existing.id;
+    } else {
+      console.log(` - Creating monitor ${monitor.name}`);
+      const res = await client.createMonitor(monitor);
+      return res.id;
+    }
+  }
+
+  async function pushSLO(slo: SLO) {
+    const existing = slos.find(d => d.name == slo.name);
+
+    if (existing) {
+      console.log(` - Updating ${slo.name}`);
+      await client.updateSLO(existing.id, slo);
+      return existing.id;
+    } else {
+      console.log(` - Creating ${slo.name}`);
+      const res = await client.createSLO(slo);
+      return res.id;
+    }
+  }
+
+  async function pushMonitors(app: App) {
+    for (const monitor of app.warningMonitors) {
+      await pushMonitor(monitor);
+    }
+
+    let outageMonitors: number[] = [];
+    for (const monitor of app.outageMonitors) {
+      outageMonitors.push(await pushMonitor(monitor));
+    }
+    if (outageMonitors.length > 0) {
+      await pushSLO({
+        type: "monitor",
+        name: `${app.name} SLO`,
+        description: `Track the uptime of ${app.name}`,
+        monitor_ids: outageMonitors,
+        thresholds: [{ timeframe: "30d", target: 99, warning: 99.9 }],
+        tags: [`service:${app.name}`, "created_by:ddac"]
+      });
     }
   }
 
   for (const app of apps.default) {
     if (
       args.argv.name &&
-      args.argv.name.toLowerCase() !== app.component.title.toLowerCase()
+      args.argv.name.toLowerCase() !== app.board.title.toLowerCase()
     ) {
       continue;
     }
-    await push(app);
+    await pushDashboard(app);
+    await pushMonitors(app);
   }
   console.log("done!");
 })();
