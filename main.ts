@@ -121,14 +121,28 @@ const client = new api.Client(
     for (const monitor of app.outageMonitors) {
       outageMonitors.push(await pushMonitor(monitor));
     }
+    var sloID = "";
     if (outageMonitors.length > 0) {
-      await pushSLO({
+      sloID = await pushSLO({
         type: "monitor",
         name: `${app.name} SLO`,
-        description: `Track the uptime of ${app.name}`,
+        description: `Track the uptime of ${app.name} ` + app.team.slackGroup,
         monitor_ids: outageMonitors,
         thresholds: [{ timeframe: "30d", target: 99.9, warning: 99.95 }],
         tags: [`service:${app.name}`, "created_by:ddac"]
+      });
+
+      app.board.widgets.unshift({
+        definition: {
+          viz: "slo",
+          type: "slo",
+          slo_id: sloID,
+          title: `${app.name} SLO`,
+          time_windows: ["30d"],
+          show_error_budget: true,
+          view_type: "detail",
+          view_mode: "overall"
+        }
       });
     }
   }

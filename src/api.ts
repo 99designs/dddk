@@ -78,12 +78,12 @@ export class Client {
   }
 
   async createSLO(slo: SLO) {
-    const res = await this.do<{ data: Monitor }>("POST", `/v1/slo`, slo);
+    const res = await this.do<{ data: SLO }>("POST", `/v1/slo`, slo);
     return res.data;
   }
 
   async updateSLO(id: string, slo: SLO) {
-    const res = await this.do<{ data: Monitor }>("PUT", `/v1/slo/${id}`, slo);
+    const res = await this.do<{ data: SLO }>("PUT", `/v1/slo/${id}`, slo);
     return res.data;
   }
 
@@ -145,7 +145,13 @@ export interface MonitorOptions {
   escalation_message?: string;
   thresholds?: {
     critical?: number;
+    critical_recovery?: number;
     warning?: number;
+    warning_recovery?: number;
+  };
+  threshold_windows?: {
+    trigger_window?: string;
+    recovery_window?: string;
   };
 }
 
@@ -189,6 +195,22 @@ export interface TopList {
   title?: string;
 }
 
+export interface SLOWidget {
+  type: "slo";
+  viz: "slo";
+  slo_id: string;
+  time_windows: string[];
+  show_error_budget: boolean;
+  title?: string;
+  legend_size?: string;
+  legend?: boolean;
+
+  loading?: boolean;
+  data?: any;
+  view_type?: "detail";
+  view_mode?: "overall";
+}
+
 export interface Group {
   type: "group";
   layout_type: "ordered";
@@ -196,7 +218,7 @@ export interface Group {
   widgets: Widget[];
 }
 
-export type WidgetDefinition = TimeSeries | TopList | Group;
+export type WidgetDefinition = TimeSeries | TopList | SLOWidget | Group;
 
 export interface Widget {
   definition: WidgetDefinition;
