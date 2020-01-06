@@ -29,23 +29,24 @@ const client = new api.Client(
 );
 
 (async () => {
-  const dashboards = (await client.getDashboards()).filter(
-    d => d.description && d.description.includes(descriptionTag)
-  );
-  const monitors = (await client.getMonitors()).filter(
-    d => d.tags && d.tags.find(t => t == "created_by:ddac")
-  );
-  const slos = (await client.getSLOs()).filter(
-    d => d.tags && d.tags.find(t => t == "created_by:ddac")
-  );
-  const synthetics = (await client.getSynthetics()).filter(
-    d => d.tags && d.tags.find(t => t == "created_by:ddac")
-  );
+  const dashboards = (await client.getDashboards())
+    .filter(d => d.description && d.description.includes(descriptionTag))
+    .map(d => ({ ...d, seen: false }));
+  const monitors = (await client.getMonitors())
+    .filter(d => d.tags && d.tags.find(t => t == "created_by:ddac"))
+    .map(d => ({ ...d, seen: false }));
+  const slos = (await client.getSLOs())
+    .filter(d => d.tags && d.tags.find(t => t == "created_by:ddac"))
+    .map(d => ({ ...d, seen: false }));
+  const synthetics = (await client.getSynthetics())
+    .filter(d => d.tags && d.tags.find(t => t == "created_by:ddac"))
+    .map(d => ({ ...d, seen: false }));
 
   async function pushDashboard(app: App) {
     const existing = dashboards.find(d => d.title == app.board.title);
 
     if (existing) {
+      existing.seen = true;
       console.log(` - Updating dashboard ${app.board.title}`);
       await client.updateDashboard(existing.id, app.board);
     } else {
@@ -58,6 +59,7 @@ const client = new api.Client(
     const existing = monitors.find(d => d.name == monitor.name);
 
     if (existing) {
+      existing.seen = true;
       console.log(` - Updating monitor ${monitor.name}`);
       await client.updateMonitor(existing.id, monitor);
       return existing.id;
@@ -72,6 +74,7 @@ const client = new api.Client(
     const existing = synthetics.find(d => d.name == syn.name);
 
     if (existing) {
+      existing.seen = true;
       console.log(` - Updating synthetic ${syn.name}`);
       await client.updateSynthetic(existing.public_id, syn);
       return existing.public_id;
@@ -86,6 +89,7 @@ const client = new api.Client(
     const existing = slos.find(d => d.name == slo.name);
 
     if (existing) {
+      existing.seen = true;
       console.log(` - Updating ${slo.name}`);
       await client.updateSLO(existing.id, slo);
       return existing.id;
@@ -156,6 +160,30 @@ const client = new api.Client(
     }
     await pushMonitors(app);
     await pushDashboard(app);
+  }
+
+  if (!args.argv.name) {
+    for (const d of dashboards.filter(d => !d.seen)) {
+      console.log(` - Deleting dashboard ${d.title}`);
+      await client.deleteDashboard(d.id);
+    }
+
+    for (const d of monitors.filter(
+      d => !d.seen && !d.name.includes("[Synthetics]")
+    )) {
+      console.log(` - Deleting monitor ${d.name}`);
+      await client.deleteMonitor(d.id);
+    }
+
+    for (const d of slos.filter(d => !d.seen)) {
+      console.log(` - Deleting slo ${d.name}`);
+      await client.deleteSLO(d.id);
+    }
+
+    for (const d of synthetics.filter(d => !d.seen)) {
+      console.log(` - Deleting synthetic ${d.name}`);
+      await client.deleteSynthetic(d.public_id);
+    }
   }
   console.log("done!");
 })();

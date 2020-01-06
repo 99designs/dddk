@@ -29,6 +29,10 @@ export class Client {
     return this.do<any>("PUT", `/v1/dashboard/${id}`, dashboard);
   }
 
+  async deleteDashboard(id: string) {
+    return this.do<any>("DELETE", `/v1/dashboard/${id}`);
+  }
+
   async getMonitors(query?: string) {
     if (query) {
       query = "&query=" + encodeURIComponent(query);
@@ -42,6 +46,10 @@ export class Client {
 
   async updateMonitor(id: number, monitor: Monitor) {
     return this.do<{ data: Monitor }>("PUT", `/v1/monitor/${id}`, monitor);
+  }
+
+  async deleteMonitor(id: number) {
+    return this.do<any>("DELETE", `/v1/monitor/${id}`);
   }
 
   async getSynthetics() {
@@ -58,6 +66,10 @@ export class Client {
 
   async updateSynthetic(id: string, syn: Synthetic) {
     return this.do<{ data: Monitor }>("PUT", `/v1/synthetics/tests/${id}`, syn);
+  }
+
+  async deleteSynthetic(id: string) {
+    return this.do<any>("DELETE", `/v1/synthetics/tests/${id}`);
   }
 
   async getSLOs(query: string = "") {
@@ -84,6 +96,11 @@ export class Client {
 
   async updateSLO(id: string, slo: SLO) {
     const res = await this.do<{ data: SLO }>("PUT", `/v1/slo/${id}`, slo);
+    return res.data;
+  }
+
+  async deleteSLO(id: string) {
+    const res = await this.do<{ data: SLO }>("DELETE", `/v1/slo/${id}`);
     return res.data;
   }
 
