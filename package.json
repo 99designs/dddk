@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "common-tags": "^1.8.0",
     "got": "^10.0.1",
     "ts-node": "^8.5.4",
     "typescript": "^3.6.3",
