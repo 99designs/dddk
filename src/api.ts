@@ -109,7 +109,7 @@ export class Client {
       const resp = await got("https://api.datadoghq.com/api" + url, {
         headers: {
           "Content-Type": "application/json",
-          "User-Agent": "github.com/99designs/dd",
+          "User-Agent": "github.com/99designs/dddk",
           "DD-API-KEY": this.apiKey,
           "DD-APPLICATION-KEY": this.applicationKey
         },
