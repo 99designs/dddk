@@ -4,7 +4,8 @@ import { Monitor, Synthetic } from "./api";
 import { stripIndent } from "./stripIndent";
 import { Team } from "./team";
 
-export const descriptionTag = "managed by [ddac](github.com/99designs/ddac)";
+export const descriptionTag = "managed by [dddk](github.com/99designs/dddk)";
+export const createdbyTag = "created_by:dddk";
 
 export class App implements Container {
   name: string;
@@ -59,7 +60,7 @@ export class App implements Container {
         this.team.pagerdutyGroup +
         " " +
         this.team.slackGroup,
-      tags: ["service:" + this.name.toLowerCase(), "created_by:ddac"]
+      tags: ["service:" + this.name.toLowerCase(), createdbyTag]
     });
   }
 
@@ -68,7 +69,7 @@ export class App implements Container {
       ...monitor,
       name: name,
       message: stripIndent(message) + " " + this.team.slackGroup,
-      tags: ["service:" + this.name.toLowerCase(), "created_by:ddac"]
+      tags: ["service:" + this.name.toLowerCase(), createdbyTag]
     });
   }
 
@@ -82,7 +83,7 @@ export class App implements Container {
         this.team.pagerdutyGroup +
         " " +
         this.team.slackGroup,
-      tags: ["service:" + this.name.toLowerCase(), "created_by:ddac"]
+      tags: ["service:" + this.name.toLowerCase(), createdbyTag]
     });
   }
 }
