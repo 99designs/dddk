@@ -1,5 +1,5 @@
 import * as api from "./src/api";
-import { App, descriptionTag } from "./src/app";
+import { App, descriptionTag, createdbyTag } from "./src/app";
 import * as yargs from "yargs";
 import * as path from "path";
 import { Monitor, SLO, Synthetic } from "./src/api";
@@ -18,7 +18,7 @@ const apps = require(appFile);
 if (!process.env["DD_API_KEY"] || !process.env["DD_APP_KEY"]) {
   console.error(
     "MISSING API KEYS - run again using \n" +
-      "  aws-vault exec platform -- chamber exec ddac -- npm run sync\n\n"
+      "  aws-vault exec platform -- chamber exec dddk -- npm run sync\n\n"
   );
   process.exit(1);
 }
@@ -33,13 +33,13 @@ const client = new api.Client(
     .filter(d => d.description && d.description.includes(descriptionTag))
     .map(d => ({ ...d, seen: false }));
   const monitors = (await client.getMonitors())
-    .filter(d => d.tags && d.tags.find(t => t == "created_by:ddac"))
+    .filter(d => d.tags && d.tags.find(t => t == createdbyTag))
     .map(d => ({ ...d, seen: false }));
   const slos = (await client.getSLOs())
-    .filter(d => d.tags && d.tags.find(t => t == "created_by:ddac"))
+    .filter(d => d.tags && d.tags.find(t => t == createdbyTag))
     .map(d => ({ ...d, seen: false }));
   const synthetics = (await client.getSynthetics())
-    .filter(d => d.tags && d.tags.find(t => t == "created_by:ddac"))
+    .filter(d => d.tags && d.tags.find(t => t == createdbyTag))
     .map(d => ({ ...d, seen: false }));
 
   async function pushDashboard(app: App) {
@@ -109,7 +109,7 @@ const client = new api.Client(
       const syntheticMonitor = (await client.getMonitors()).filter(
         d =>
           d.tags &&
-          d.tags.find(t => t == "created_by:ddac") &&
+          d.tags.find(t => t == createdbyTag) &&
           d.name == "[Synthetics] " + syn.name
       );
 
@@ -133,7 +133,7 @@ const client = new api.Client(
         description: `Track the uptime of ${app.name} ` + app.team.slackGroup,
         monitor_ids: outageMonitors,
         thresholds: [{ timeframe: "30d", target: 99.9, warning: 99.95 }],
-        tags: [`service:${app.name}`, "created_by:ddac"]
+        tags: [`service:${app.name}`, createdbyTag]
       });
 
       app.board.widgets.unshift({
