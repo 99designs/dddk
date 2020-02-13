@@ -311,11 +311,7 @@ export interface Marker {
     | "info solid"
     | "warning solid"
     | "error solid"
-    | "ok solid"
-    | "info bold"
-    | "warning bold"
-    | "error bold"
-    | "ok bold";
+    | "ok solid";
   label?: string;
 }
 
