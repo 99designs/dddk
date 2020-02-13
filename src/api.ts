@@ -204,6 +204,22 @@ export interface TimeSeries {
   events?: Event[];
   markers?: Marker[];
   title?: string;
+  show_legend?: boolean;
+  legend_size?: string;
+}
+
+export interface Change {
+  type: "change";
+  requests: Request[];
+  title?: string;
+}
+
+export interface QueryValue {
+  type: "query_value";
+  requests: Request[];
+  autoscale?: boolean;
+  precision?: number;
+  title?: string;
 }
 
 export interface TopList {
@@ -235,7 +251,13 @@ export interface Group {
   widgets: Widget[];
 }
 
-export type WidgetDefinition = TimeSeries | TopList | SLOWidget | Group;
+export type WidgetDefinition =
+  | TimeSeries
+  | TopList
+  | SLOWidget
+  | Group
+  | QueryValue
+  | Change;
 
 export interface Widget {
   definition: WidgetDefinition;
@@ -255,6 +277,12 @@ export interface Request {
   style?: Style;
   metadata?: Metadata[];
   display_type?: "area" | "bars" | "line";
+  aggregator?: "avg";
+  change_type?: "absolute";
+  compare_to?: "week_before";
+  increase_good?: boolean;
+  order_by?: "change";
+  order_dir?: "desc";
 }
 
 export interface ApmRequest {
@@ -303,7 +331,15 @@ export interface Metadata {
 
 export interface Marker {
   value: string;
-  display_type?: "info dashed" | "warning dashed" | "error dashed";
+  display_type?:
+    | "info dashed"
+    | "warning dashed"
+    | "error dashed"
+    | "ok dashed"
+    | "info solid"
+    | "warning solid"
+    | "error solid"
+    | "ok solid";
   label?: string;
 }
 
