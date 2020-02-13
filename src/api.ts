@@ -303,7 +303,19 @@ export interface Metadata {
 
 export interface Marker {
   value: string;
-  display_type?: "info dashed" | "warning dashed" | "error dashed";
+  display_type?:
+    | "info dashed"
+    | "warning dashed"
+    | "error dashed"
+    | "ok dashed"
+    | "info solid"
+    | "warning solid"
+    | "error solid"
+    | "ok solid"
+    | "info bold"
+    | "warning bold"
+    | "error bold"
+    | "ok bold";
   label?: string;
 }
 
