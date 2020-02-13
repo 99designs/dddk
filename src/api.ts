@@ -206,6 +206,14 @@ export interface TimeSeries {
   title?: string;
 }
 
+export interface QueryValue {
+  type: "query_value";
+  requests: Request[];
+  autoscale?: boolean;
+  precision?: number;
+  title?: string;
+}
+
 export interface TopList {
   type: "toplist";
   requests: (Request | ApmRequest)[];
@@ -235,7 +243,12 @@ export interface Group {
   widgets: Widget[];
 }
 
-export type WidgetDefinition = TimeSeries | TopList | SLOWidget | Group;
+export type WidgetDefinition =
+  | TimeSeries
+  | TopList
+  | SLOWidget
+  | Group
+  | QueryValue;
 
 export interface Widget {
   definition: WidgetDefinition;
@@ -255,6 +268,7 @@ export interface Request {
   style?: Style;
   metadata?: Metadata[];
   display_type?: "area" | "bars" | "line";
+  aggregator?: "avg";
 }
 
 export interface ApmRequest {
