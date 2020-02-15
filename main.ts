@@ -100,8 +100,17 @@ const client = new api.Client(
     }
   }
 
+  function addAletGraph(app: App, monitorID: number, monitor: Monitor) {
+    app.addWidget("Alert: " + monitor.name, {
+      type: "alert_graph",
+      alert_id: monitorID.toString(),
+      viz_type: "timeseries"
+    });
+  }
+
   async function pushMonitors(app: App) {
-    let outageMonitors: number[] = [];
+    let outageMonitorIDs: number[] = [];
+
     for (const syn of app.synthetics) {
       await pushSynthetic(syn);
 
@@ -114,24 +123,30 @@ const client = new api.Client(
       );
 
       if (syntheticMonitor.length == 1) {
-        outageMonitors.push(syntheticMonitor[0].id);
+        outageMonitorIDs.push(syntheticMonitor[0].id);
       }
     }
 
+    var pushedMonitorID: number;
     for (const monitor of app.warningMonitors) {
-      await pushMonitor(monitor);
+      pushedMonitorID = await pushMonitor(monitor);
+      addAletGraph(app, pushedMonitorID, monitor);
     }
 
     for (const monitor of app.outageMonitors) {
-      outageMonitors.push(await pushMonitor(monitor));
+      pushedMonitorID = await pushMonitor(monitor);
+
+      addAletGraph(app, pushedMonitorID, monitor);
+      outageMonitorIDs.push(pushedMonitorID);
     }
+
     var sloID = "";
-    if (outageMonitors.length > 0) {
+    if (outageMonitorIDs.length > 0) {
       sloID = await pushSLO({
         type: "monitor",
         name: `${app.name} SLO`,
         description: `Track the uptime of ${app.name} ` + app.team.slackGroup,
-        monitor_ids: outageMonitors,
+        monitor_ids: outageMonitorIDs,
         thresholds: [{ timeframe: "30d", target: 99.9, warning: 99.95 }],
         tags: [`service:${app.name}`, createdbyTag]
       });
