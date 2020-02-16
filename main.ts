@@ -1,5 +1,10 @@
 import * as api from "./src/api";
-import { App, descriptionTag, createdbyTag } from "./src/app";
+import {
+  App,
+  descriptionTag,
+  createdbyTag,
+  generateAlertGraphTag
+} from "./src/app";
 import * as yargs from "yargs";
 import * as path from "path";
 import { Monitor, SLO, Synthetic } from "./src/api";
@@ -12,8 +17,11 @@ const args = yargs
   })
   .demandCommand();
 
+console.log(`Parsing local apps...`);
+console.time("   ...completed in");
 const appFile = path.resolve(args.argv.apps as string);
 const apps = require(appFile);
+console.timeEnd("   ...completed in");
 
 if (!process.env["DD_API_KEY"] || !process.env["DD_APP_KEY"]) {
   console.error(
@@ -29,6 +37,9 @@ const client = new api.Client(
 );
 
 (async () => {
+  console.log(`Fetching data from DataDog...`);
+  console.time("   ...completed in");
+
   const dashboards = (await client.getDashboards())
     .filter(d => d.description && d.description.includes(descriptionTag))
     .map(d => ({ ...d, seen: false }));
@@ -41,6 +52,8 @@ const client = new api.Client(
   const synthetics = (await client.getSynthetics())
     .filter(d => d.tags && d.tags.find(t => t == createdbyTag))
     .map(d => ({ ...d, seen: false }));
+
+  console.timeEnd(`   ...completed in`);
 
   async function pushDashboard(app: App) {
     const existing = dashboards.find(d => d.title == app.board.title);
@@ -130,14 +143,21 @@ const client = new api.Client(
     var pushedMonitorID: number;
     for (const monitor of app.warningMonitors) {
       pushedMonitorID = await pushMonitor(monitor);
-      addAletGraph(app, pushedMonitorID, monitor);
+
+      if (monitor.tags.find(d => d == generateAlertGraphTag)) {
+        console.log(" - - Generating Alert Graph for this monitor");
+        addAletGraph(app, pushedMonitorID, monitor);
+      }
     }
 
     for (const monitor of app.outageMonitors) {
       pushedMonitorID = await pushMonitor(monitor);
-
-      addAletGraph(app, pushedMonitorID, monitor);
       outageMonitorIDs.push(pushedMonitorID);
+
+      if (monitor.tags.find(d => d == generateAlertGraphTag)) {
+        console.log(" - - Generating Alert Graph for this monitor");
+        addAletGraph(app, pushedMonitorID, monitor);
+      }
     }
 
     var sloID = "";
@@ -166,6 +186,8 @@ const client = new api.Client(
     }
   }
 
+  console.log("Pushing local changes to DataDog...");
+  console.time("   ...completed in");
   for (const app of apps.default) {
     if (
       args.argv.name &&
@@ -200,5 +222,7 @@ const client = new api.Client(
       await client.deleteSynthetic(d.public_id);
     }
   }
+  console.timeEnd("   ...completed in");
+
   console.log("done!");
 })();
