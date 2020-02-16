@@ -1,5 +1,10 @@
 import * as api from "./src/api";
-import { App, descriptionTag, createdbyTag } from "./src/app";
+import {
+  App,
+  descriptionTag,
+  createdbyTag,
+  generateAlertGraphTag
+} from "./src/app";
 import * as yargs from "yargs";
 import * as path from "path";
 import { Monitor, SLO, Synthetic } from "./src/api";
@@ -12,8 +17,11 @@ const args = yargs
   })
   .demandCommand();
 
+console.log(`Parsing local apps...`);
+console.time("   ...completed in");
 const appFile = path.resolve(args.argv.apps as string);
 const apps = require(appFile);
+console.timeEnd("   ...completed in");
 
 if (!process.env["DD_API_KEY"] || !process.env["DD_APP_KEY"]) {
   console.error(
@@ -29,6 +37,9 @@ const client = new api.Client(
 );
 
 (async () => {
+  console.log(`Fetching data from DataDog...`);
+  console.time("   ...completed in");
+
   const dashboards = (await client.getDashboards())
     .filter(d => d.description && d.description.includes(descriptionTag))
     .map(d => ({ ...d, seen: false }));
@@ -41,6 +52,8 @@ const client = new api.Client(
   const synthetics = (await client.getSynthetics())
     .filter(d => d.tags && d.tags.find(t => t == createdbyTag))
     .map(d => ({ ...d, seen: false }));
+
+  console.timeEnd(`   ...completed in`);
 
   async function pushDashboard(app: App) {
     const existing = dashboards.find(d => d.title == app.board.title);
@@ -100,8 +113,17 @@ const client = new api.Client(
     }
   }
 
+  function addAletGraph(app: App, monitorID: number, monitor: Monitor) {
+    app.addWidget("Alert: " + monitor.name, {
+      type: "alert_graph",
+      alert_id: monitorID.toString(),
+      viz_type: "timeseries"
+    });
+  }
+
   async function pushMonitors(app: App) {
-    let outageMonitors: number[] = [];
+    let outageMonitorIDs: number[] = [];
+
     for (const syn of app.synthetics) {
       await pushSynthetic(syn);
 
@@ -114,24 +136,37 @@ const client = new api.Client(
       );
 
       if (syntheticMonitor.length == 1) {
-        outageMonitors.push(syntheticMonitor[0].id);
+        outageMonitorIDs.push(syntheticMonitor[0].id);
       }
     }
 
+    var pushedMonitorID: number;
     for (const monitor of app.warningMonitors) {
-      await pushMonitor(monitor);
+      pushedMonitorID = await pushMonitor(monitor);
+
+      if (monitor.tags.find(d => d == generateAlertGraphTag)) {
+        console.log(" - - Generating Alert Graph for this monitor");
+        addAletGraph(app, pushedMonitorID, monitor);
+      }
     }
 
     for (const monitor of app.outageMonitors) {
-      outageMonitors.push(await pushMonitor(monitor));
+      pushedMonitorID = await pushMonitor(monitor);
+      outageMonitorIDs.push(pushedMonitorID);
+
+      if (monitor.tags.find(d => d == generateAlertGraphTag)) {
+        console.log(" - - Generating Alert Graph for this monitor");
+        addAletGraph(app, pushedMonitorID, monitor);
+      }
     }
+
     var sloID = "";
-    if (outageMonitors.length > 0) {
+    if (outageMonitorIDs.length > 0) {
       sloID = await pushSLO({
         type: "monitor",
         name: `${app.name} SLO`,
         description: `Track the uptime of ${app.name} ` + app.team.slackGroup,
-        monitor_ids: outageMonitors,
+        monitor_ids: outageMonitorIDs,
         thresholds: [{ timeframe: "30d", target: 99.9, warning: 99.95 }],
         tags: [`service:${app.name}`, createdbyTag]
       });
@@ -151,6 +186,8 @@ const client = new api.Client(
     }
   }
 
+  console.log("Pushing local changes to DataDog...");
+  console.time("   ...completed in");
   for (const app of apps.default) {
     if (
       args.argv.name &&
@@ -185,5 +222,7 @@ const client = new api.Client(
       await client.deleteSynthetic(d.public_id);
     }
   }
+  console.timeEnd("   ...completed in");
+
   console.log("done!");
 })();
