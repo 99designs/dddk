@@ -22,7 +22,8 @@ export class Client {
   }
 
   async createDashboard(dashboard: Dashboard) {
-    return this.do<any>("POST", "/v1/dashboard", dashboard);
+    const res = this.do<Dashboard>("POST", "/v1/dashboard", dashboard);
+    return res;
   }
 
   async updateDashboard(id: string, dashboard: Dashboard) {
@@ -45,7 +46,7 @@ export class Client {
   }
 
   async updateMonitor(id: number, monitor: Monitor) {
-    return this.do<{ data: Monitor }>("PUT", `/v1/monitor/${id}`, monitor);
+    return this.do<Monitor>("PUT", `/v1/monitor/${id}`, monitor);
   }
 
   async deleteMonitor(id: number) {
@@ -65,7 +66,11 @@ export class Client {
   }
 
   async updateSynthetic(id: string, syn: Synthetic) {
-    return this.do<{ data: Monitor }>("PUT", `/v1/synthetics/tests/${id}`, syn);
+    return this.do<{ data: HttpSynthetic }>(
+      "PUT",
+      `/v1/synthetics/tests/${id}`,
+      syn
+    );
   }
 
   async deleteSynthetic(id: string) {
@@ -90,18 +95,18 @@ export class Client {
   }
 
   async createSLO(slo: SLO) {
-    const res = await this.do<{ data: SLO }>("POST", `/v1/slo`, slo);
-    return res.data;
+    const res = await this.do<{ data: SLO[] }>("POST", `/v1/slo`, slo);
+    return res.data[0];
   }
 
   async updateSLO(id: string, slo: SLO) {
-    const res = await this.do<{ data: SLO }>("PUT", `/v1/slo/${id}`, slo);
-    return res.data;
+    const res = await this.do<{ data: SLO[] }>("PUT", `/v1/slo/${id}`, slo);
+    return res.data[0];
   }
 
   async deleteSLO(id: string) {
-    const res = await this.do<{ data: SLO }>("DELETE", `/v1/slo/${id}`);
-    return res.data;
+    const res = await this.do<{ data: SLO[] }>("DELETE", `/v1/slo/${id}`);
+    return res.data[0];
   }
 
   private async do<T>(method: Method, url: string, body?: any): Promise<T> {
@@ -450,3 +455,30 @@ export interface HttpSynthetic {
 }
 
 export type Synthetic = HttpSynthetic;
+
+export interface Lock {
+  monitors: { [id: string]: Monitor };
+  dashboards: { [id: string]: Dashboard };
+  synthetics: { [public_id: string]: Synthetic };
+  slos: { [id: string]: SLO };
+}
+
+import * as fs from "fs";
+
+export let lock: Lock = {
+  monitors: {},
+  dashboards: {},
+  synthetics: {},
+  slos: {}
+};
+
+if (fs.existsSync("lock.json")) {
+  console.log("found old log");
+  lock = JSON.parse(fs.readFileSync("lock.json").toString());
+}
+
+console.log(lock);
+
+// lock.monitors["123"] = {
+//   name: "asdf",
+// }

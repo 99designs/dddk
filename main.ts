@@ -9,6 +9,10 @@ import {
 import * as yargs from "yargs";
 import * as path from "path";
 import { Monitor, SLO, Synthetic } from "./src/api";
+import { lock } from "./src/api";
+import equal from "deep-equal";
+
+const fs = require("fs");
 
 const args = yargs
   .command("push <apps>", "push datadog dashboards up")
@@ -23,8 +27,6 @@ console.time("   ...completed in");
 const appFile = path.resolve(args.argv.apps as string);
 const apps = require(appFile);
 console.timeEnd("   ...completed in");
-
-const fs = require("fs");
 
 function getAppModifiedDate(appname: string) {
   const path = "./99designs/apps/";
@@ -73,16 +75,25 @@ const client = new api.Client(
 
     if (existing) {
       existing.seen = true;
-      if (new Date(existing.modified_at) >= getAppModifiedDate(app.name)) {
+      app.board.id = existing.id;
+      console.log(app.board);
+      console.log("!+!+!+!+!+!+!+");
+      console.log(lock.dashboards[existing.id]);
+      if (equal(lock.dashboards[existing.id], app.board)) {
+        console.log("skip! dashboards");
         stats.skipped++;
         return existing.id;
       }
       console.log(` - Updating dashboard ${app.board.title}`);
       await client.updateDashboard(existing.id, app.board);
+      app.board.id = existing.id;
+      lock.dashboards[app.board.id] = app.board;
       stats.updated++;
     } else {
       console.log(` - Creating dashboard ${app.board.title}`);
-      await client.createDashboard(app.board);
+      const res = await client.createDashboard(app.board);
+      app.board.id = res.id;
+      lock.dashboards[app.board.id] = app.board;
       stats.created++;
     }
   }
@@ -95,20 +106,33 @@ const client = new api.Client(
     const existing = monitors.find(d => d.name == monitor.name);
 
     if (existing) {
+      monitor.id = existing.id;
       existing.seen = true;
-      if (new Date(existing.modified) >= getAppModifiedDate(appname)) {
+      if (
+        equal(
+          lock.monitors[existing.id],
+          JSON.parse(JSON.stringify(monitor, null, 2))
+        )
+      ) {
+        console.log("skip! mon");
         stats.skipped++;
         return existing.id;
       }
       console.log(` - Updating monitor ${monitor.name}`);
-      await client.updateMonitor(existing.id, monitor);
+      console.log(lock.monitors[monitor.id]);
+      console.log("differs ------------------");
+      console.log(monitor);
+      const res = await client.updateMonitor(existing.id, monitor);
+      lock.monitors[res.id] = monitor;
       stats.updated++;
       return existing.id;
     } else {
       console.log(` - Creating monitor ${monitor.name}`);
       const res = await client.createMonitor(monitor);
+      monitor.id = res.data.id;
+      lock.monitors[res.id] = monitor;
       stats.created++;
-      return res.id;
+      return res.data.id;
     }
   }
 
@@ -120,20 +144,28 @@ const client = new api.Client(
     const existing = synthetics.find(d => d.name == syn.name);
 
     if (existing) {
+      // the synthetic exists on datadog servers
       existing.seen = true;
-      if (new Date(existing.modified_at) >= getAppModifiedDate(appname)) {
+
+      if (equal(syn, lock.synthetics[existing.public_id])) {
+        console.log("skip! syn");
         stats.skipped++;
         return existing.public_id;
       }
       console.log(` - Updating synthetic ${syn.name}`);
-      await client.updateSynthetic(existing.public_id, syn);
+      syn.public_id = (
+        await client.updateSynthetic(existing.public_id, syn)
+      ).data.public_id;
+      lock.synthetics[syn.public_id] = syn;
       stats.updated++;
-      return existing.public_id;
+      return syn.public_id;
     } else {
       console.log(` - Creating synthetic ${syn.name}`);
       const res = await client.createSynthetic(syn);
+      syn.public_id = res.public_id;
+      lock.synthetics[syn.public_id] = syn;
       stats.created++;
-      return res.public_id;
+      return syn.public_id;
     }
   }
 
@@ -142,18 +174,22 @@ const client = new api.Client(
 
     if (existing) {
       existing.seen = true;
+      slo.id = existing.id;
       // slos record time in UNIX format
-      if (parseDate(existing.modified_at) >= getAppModifiedDate(appname)) {
+      if (equal(slo, lock.slos[existing.id])) {
+        console.log("skip! slo");
         stats.skipped++;
         return existing.id;
       }
       console.log(` - Updating ${slo.name}`);
       await client.updateSLO(existing.id, slo);
+      lock.slos[existing.id] = slo;
       stats.updated++;
       return existing.id;
     } else {
       console.log(` - Creating ${slo.name}`);
       const res = await client.createSLO(slo);
+      lock.slos[res.id] = res;
       stats.created++;
       return res.id;
     }
@@ -280,7 +316,8 @@ const client = new api.Client(
       stats.deleted++;
     }
   }
-
+  //console.log(lock)
+  fs.writeFileSync("lock.json", JSON.stringify(lock));
   console.log(`Object statstics =`, stats);
   console.timeEnd("   ...completed in");
 })();
