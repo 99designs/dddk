@@ -134,6 +134,7 @@ export interface QueryMonitor {
   name?: string;
   message: string;
   tags?: string[];
+  modified?: Date;
   options: MonitorOptions;
 }
 
@@ -144,6 +145,7 @@ export interface MetricMonitor {
   name?: string;
   message: string;
   tags?: string[];
+  modified?: Date;
   options: MonitorOptions;
 }
 
@@ -191,8 +193,8 @@ export interface MonitorSLO {
   type: "monitor";
   monitor_ids: number[];
   groups?: string[];
-  created?: Date;
-  modified?: Date;
+  created_at?: string;
+  modified_at?: string;
 }
 
 export type SLO = MonitorSLO;
@@ -375,7 +377,7 @@ export interface TemplateVariable {
 }
 
 export interface DashboardSummary {
-  created_at: string;
+  created_at: Date;
   is_read_only: boolean;
   description: string;
   title: string;
@@ -444,6 +446,7 @@ export interface HttpSynthetic {
     };
   };
   message: string;
+  modified_at?: string;
 }
 
 export type Synthetic = HttpSynthetic;

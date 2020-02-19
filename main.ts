@@ -3,7 +3,8 @@ import {
   App,
   descriptionTag,
   createdbyTag,
-  generateAlertGraphTag
+  generateAlertGraphTag,
+  pushStats
 } from "./src/app";
 import * as yargs from "yargs";
 import * as path from "path";
@@ -22,6 +23,18 @@ console.time("   ...completed in");
 const appFile = path.resolve(args.argv.apps as string);
 const apps = require(appFile);
 console.timeEnd("   ...completed in");
+
+const fs = require("fs");
+
+function getAppModifiedDate(appname: string) {
+  const path = "./99designs/apps/";
+  const stats = fs.statSync(path + appname.toLowerCase() + ".ts");
+  return new Date(stats.mtime);
+}
+
+function parseDate(unixtime: string) {
+  return new Date(parseInt(unixtime) * 1000);
+}
 
 if (!process.env["DD_API_KEY"] || !process.env["DD_APP_KEY"]) {
   console.error(
@@ -55,60 +68,93 @@ const client = new api.Client(
 
   console.timeEnd(`   ...completed in`);
 
-  async function pushDashboard(app: App) {
+  async function pushDashboard(app: App, stats: pushStats) {
     const existing = dashboards.find(d => d.title == app.board.title);
 
     if (existing) {
       existing.seen = true;
+      if (new Date(existing.modified_at) >= getAppModifiedDate(app.name)) {
+        stats.skipped++;
+        return existing.id;
+      }
       console.log(` - Updating dashboard ${app.board.title}`);
       await client.updateDashboard(existing.id, app.board);
+      stats.updated++;
     } else {
       console.log(` - Creating dashboard ${app.board.title}`);
       await client.createDashboard(app.board);
+      stats.created++;
     }
   }
 
-  async function pushMonitor(monitor: Monitor): Promise<number> {
+  async function pushMonitor(
+    monitor: Monitor,
+    appname: string,
+    stats: pushStats
+  ): Promise<number> {
     const existing = monitors.find(d => d.name == monitor.name);
 
     if (existing) {
       existing.seen = true;
+      if (new Date(existing.modified) >= getAppModifiedDate(appname)) {
+        stats.skipped++;
+        return existing.id;
+      }
       console.log(` - Updating monitor ${monitor.name}`);
       await client.updateMonitor(existing.id, monitor);
+      stats.updated++;
       return existing.id;
     } else {
       console.log(` - Creating monitor ${monitor.name}`);
       const res = await client.createMonitor(monitor);
+      stats.created++;
       return res.id;
     }
   }
 
-  async function pushSynthetic(syn: Synthetic) {
+  async function pushSynthetic(
+    syn: Synthetic,
+    appname: string,
+    stats: pushStats
+  ) {
     const existing = synthetics.find(d => d.name == syn.name);
 
     if (existing) {
       existing.seen = true;
+      if (new Date(existing.modified_at) >= getAppModifiedDate(appname)) {
+        stats.skipped++;
+        return existing.public_id;
+      }
       console.log(` - Updating synthetic ${syn.name}`);
       await client.updateSynthetic(existing.public_id, syn);
+      stats.updated++;
       return existing.public_id;
     } else {
       console.log(` - Creating synthetic ${syn.name}`);
       const res = await client.createSynthetic(syn);
+      stats.created++;
       return res.public_id;
     }
   }
 
-  async function pushSLO(slo: SLO) {
+  async function pushSLO(slo: SLO, appname: string, stats: pushStats) {
     const existing = slos.find(d => d.name == slo.name);
 
     if (existing) {
       existing.seen = true;
+      // slos record time in UNIX format
+      if (parseDate(existing.modified_at) >= getAppModifiedDate(appname)) {
+        stats.skipped++;
+        return existing.id;
+      }
       console.log(` - Updating ${slo.name}`);
       await client.updateSLO(existing.id, slo);
+      stats.updated++;
       return existing.id;
     } else {
       console.log(` - Creating ${slo.name}`);
       const res = await client.createSLO(slo);
+      stats.created++;
       return res.id;
     }
   }
@@ -121,14 +167,16 @@ const client = new api.Client(
     });
   }
 
-  async function pushMonitors(app: App) {
+  async function pushMonitors(app: App, stats: pushStats) {
     let outageMonitorIDs: number[] = [];
 
     for (const syn of app.synthetics) {
-      await pushSynthetic(syn);
+      await pushSynthetic(syn, app.name, stats);
 
-      // the api filter doesnt work.
-      const syntheticMonitor = (await client.getMonitors()).filter(
+      // the api filter doesnt work, searching within the api call
+      const syntheticMonitor = (
+        await client.getMonitors("[Synthetics] " + syn.name)
+      ).filter(
         d =>
           d.tags &&
           d.tags.find(t => t == createdbyTag) &&
@@ -139,37 +187,39 @@ const client = new api.Client(
         outageMonitorIDs.push(syntheticMonitor[0].id);
       }
     }
-
     var pushedMonitorID: number;
+
     for (const monitor of app.warningMonitors) {
-      pushedMonitorID = await pushMonitor(monitor);
+      pushedMonitorID = await pushMonitor(monitor, app.name, stats);
 
       if (monitor.tags.find(d => d == generateAlertGraphTag)) {
-        console.log(" - - Generating Alert Graph for this monitor");
         addAletGraph(app, pushedMonitorID, monitor);
       }
     }
 
     for (const monitor of app.outageMonitors) {
-      pushedMonitorID = await pushMonitor(monitor);
+      pushedMonitorID = await pushMonitor(monitor, app.name, stats);
       outageMonitorIDs.push(pushedMonitorID);
 
       if (monitor.tags.find(d => d == generateAlertGraphTag)) {
-        console.log(" - - Generating Alert Graph for this monitor");
         addAletGraph(app, pushedMonitorID, monitor);
       }
     }
 
     var sloID = "";
     if (outageMonitorIDs.length > 0) {
-      sloID = await pushSLO({
-        type: "monitor",
-        name: `${app.name} SLO`,
-        description: `Track the uptime of ${app.name} ` + app.team.slackGroup,
-        monitor_ids: outageMonitorIDs,
-        thresholds: [{ timeframe: "30d", target: 99.9, warning: 99.95 }],
-        tags: [`service:${app.name}`, createdbyTag]
-      });
+      sloID = await pushSLO(
+        {
+          type: "monitor",
+          name: `${app.name} SLO`,
+          description: `Track the uptime of ${app.name} ` + app.team.slackGroup,
+          monitor_ids: outageMonitorIDs,
+          thresholds: [{ timeframe: "30d", target: 99.9, warning: 99.95 }],
+          tags: [`service:${app.name}`, createdbyTag]
+        },
+        app.name,
+        stats
+      );
 
       app.board.widgets.unshift({
         definition: {
@@ -188,21 +238,26 @@ const client = new api.Client(
 
   console.log("Pushing local changes to DataDog...");
   console.time("   ...completed in");
+
+  var stats: pushStats = { skipped: 0, updated: 0, created: 0, deleted: 0 };
+
   for (const app of apps.default) {
     if (
       args.argv.name &&
       args.argv.name.toLowerCase() !== app.board.title.toLowerCase()
+      //&& (getAppModifiedDate(d.name) > new Date(d.modified))
     ) {
       continue;
     }
-    await pushMonitors(app);
-    await pushDashboard(app);
+    await pushMonitors(app, stats);
+    await pushDashboard(app, stats);
   }
 
   if (!args.argv.name) {
     for (const d of dashboards.filter(d => !d.seen)) {
       console.log(` - Deleting dashboard ${d.title}`);
       await client.deleteDashboard(d.id);
+      stats.deleted++;
     }
 
     for (const d of monitors.filter(
@@ -210,19 +265,22 @@ const client = new api.Client(
     )) {
       console.log(` - Deleting monitor ${d.name}`);
       await client.deleteMonitor(d.id);
+      stats.deleted++;
     }
 
     for (const d of slos.filter(d => !d.seen)) {
       console.log(` - Deleting slo ${d.name}`);
       await client.deleteSLO(d.id);
+      stats.deleted++;
     }
 
     for (const d of synthetics.filter(d => !d.seen)) {
       console.log(` - Deleting synthetic ${d.name}`);
       await client.deleteSynthetic(d.public_id);
+      stats.deleted++;
     }
   }
-  console.timeEnd("   ...completed in");
 
-  console.log("done!");
+  console.log(`Object statstics =`, stats);
+  console.timeEnd("   ...completed in");
 })();
