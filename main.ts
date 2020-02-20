@@ -95,7 +95,7 @@ const client = new api.Client(
       console.log(` - Creating monitor ${monitor.name}`);
       const res = await client.createMonitor(monitor);
       stats.created++;
-      return res.id;
+      return res;
     }
   }
 

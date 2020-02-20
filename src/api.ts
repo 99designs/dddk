@@ -52,7 +52,7 @@ export class Client {
   async createMonitor(monitor: Monitor) {
     const res = await this.do<Monitor>("POST", `/v1/monitor`, monitor);
     lock.monitors[res.id] = monitor;
-    return monitor;
+    return res.id;
   }
 
   async updateMonitor(id: number, monitor: Monitor) {
