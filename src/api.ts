@@ -114,7 +114,7 @@ export class Client {
   async createSLO(slo: SLO) {
     const res = await this.do<{ data: SLO[] }>("POST", `/v1/slo`, slo);
     lock.slos[res.data[0].id] = slo;
-    return slo;
+    return res.data[0];
   }
 
   async updateSLO(id: string, slo: SLO) {
