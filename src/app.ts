@@ -61,7 +61,7 @@ export class App implements Container {
         this.team.pagerdutyGroup +
         " " +
         this.team.slackGroup,
-      tags: ["service:" + this.name.toLowerCase(), createdbyTag].concat(tags)
+      tags: ["service:" + this.name.toLowerCase(), createdbyTag]
     });
   }
 
@@ -70,7 +70,7 @@ export class App implements Container {
       ...monitor,
       name: name,
       message: stripIndent(message) + " " + this.team.slackGroup,
-      tags: ["service:" + this.name.toLowerCase(), createdbyTag].concat(tags)
+      tags: ["service:" + this.name.toLowerCase(), createdbyTag]
     });
   }
 

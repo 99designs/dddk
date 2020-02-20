@@ -75,25 +75,19 @@ const client = new api.Client(
 
     if (existing) {
       existing.seen = true;
-      app.board.id = existing.id;
+      if (equal(lock.dashboards[existing.id], app.board)) {
+        stats.skipped++;
+        return;
+      }
       console.log(app.board);
       console.log("!+!+!+!+!+!+!+");
       console.log(lock.dashboards[existing.id]);
-      if (equal(lock.dashboards[existing.id], app.board)) {
-        console.log("skip! dashboards");
-        stats.skipped++;
-        return existing.id;
-      }
       console.log(` - Updating dashboard ${app.board.title}`);
       await client.updateDashboard(existing.id, app.board);
-      app.board.id = existing.id;
-      lock.dashboards[app.board.id] = app.board;
       stats.updated++;
     } else {
       console.log(` - Creating dashboard ${app.board.title}`);
       const res = await client.createDashboard(app.board);
-      app.board.id = res.id;
-      lock.dashboards[app.board.id] = app.board;
       stats.created++;
     }
   }
@@ -103,36 +97,29 @@ const client = new api.Client(
     appname: string,
     stats: pushStats
   ): Promise<number> {
-    const existing = monitors.find(d => d.name == monitor.name);
+    const existing = monitors.find(
+      d => d.name == monitor.name && d.tags[0] == monitor.tags[0]
+    );
 
     if (existing) {
-      monitor.id = existing.id;
       existing.seen = true;
-      if (
-        equal(
-          lock.monitors[existing.id],
-          JSON.parse(JSON.stringify(monitor, null, 2))
-        )
-      ) {
-        console.log("skip! mon");
+      if (equal(lock.monitors[existing.id], monitor)) {
         stats.skipped++;
         return existing.id;
       }
       console.log(` - Updating monitor ${monitor.name}`);
-      console.log(lock.monitors[monitor.id]);
+      console.log(lock.monitors[existing.id]);
       console.log("differs ------------------");
       console.log(monitor);
-      const res = await client.updateMonitor(existing.id, monitor);
-      lock.monitors[res.id] = monitor;
+      await client.updateMonitor(existing.id, monitor);
       stats.updated++;
       return existing.id;
     } else {
       console.log(` - Creating monitor ${monitor.name}`);
+      console.log(monitor);
       const res = await client.createMonitor(monitor);
-      monitor.id = res.data.id;
-      lock.monitors[res.id] = monitor;
       stats.created++;
-      return res.data.id;
+      return res.id;
     }
   }
 
@@ -148,24 +135,18 @@ const client = new api.Client(
       existing.seen = true;
 
       if (equal(syn, lock.synthetics[existing.public_id])) {
-        console.log("skip! syn");
         stats.skipped++;
-        return existing.public_id;
+        return syn.public_id;
       }
       console.log(` - Updating synthetic ${syn.name}`);
-      syn.public_id = (
-        await client.updateSynthetic(existing.public_id, syn)
-      ).data.public_id;
-      lock.synthetics[syn.public_id] = syn;
+      await client.updateSynthetic(existing.public_id, syn);
       stats.updated++;
       return syn.public_id;
     } else {
       console.log(` - Creating synthetic ${syn.name}`);
       const res = await client.createSynthetic(syn);
-      syn.public_id = res.public_id;
-      lock.synthetics[syn.public_id] = syn;
       stats.created++;
-      return syn.public_id;
+      return res.public_id;
     }
   }
 
@@ -174,22 +155,20 @@ const client = new api.Client(
 
     if (existing) {
       existing.seen = true;
-      slo.id = existing.id;
       // slos record time in UNIX format
       if (equal(slo, lock.slos[existing.id])) {
-        console.log("skip! slo");
         stats.skipped++;
         return existing.id;
       }
       console.log(` - Updating ${slo.name}`);
+      console.log(slo);
+      console.log(lock.slos[existing.id]);
       await client.updateSLO(existing.id, slo);
-      lock.slos[existing.id] = slo;
       stats.updated++;
       return existing.id;
     } else {
       console.log(` - Creating ${slo.name}`);
       const res = await client.createSLO(slo);
-      lock.slos[res.id] = res;
       stats.created++;
       return res.id;
     }
@@ -285,6 +264,11 @@ const client = new api.Client(
     ) {
       continue;
     }
+    // generate all monitors and dashboards
+
+    // compare to lock
+
+    // push changes
     await pushMonitors(app, stats);
     await pushDashboard(app, stats);
   }

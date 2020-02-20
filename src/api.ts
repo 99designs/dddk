@@ -22,12 +22,19 @@ export class Client {
   }
 
   async createDashboard(dashboard: Dashboard) {
-    const res = this.do<Dashboard>("POST", "/v1/dashboard", dashboard);
+    const res = await this.do<Dashboard>("POST", "/v1/dashboard", dashboard);
+    lock.dashboards[res.id] = dashboard;
     return res;
   }
 
   async updateDashboard(id: string, dashboard: Dashboard) {
-    return this.do<any>("PUT", `/v1/dashboard/${id}`, dashboard);
+    const res = await this.do<Dashboard>(
+      "PUT",
+      `/v1/dashboard/${id}`,
+      dashboard
+    );
+    lock.dashboards[id] = dashboard;
+    return dashboard;
   }
 
   async deleteDashboard(id: string) {
@@ -42,11 +49,15 @@ export class Client {
   }
 
   async createMonitor(monitor: Monitor) {
-    return this.do<any>("POST", `/v1/monitor`, monitor);
+    const res = await this.do<Monitor>("POST", `/v1/monitor`, monitor);
+    lock.monitors[res.id] = monitor;
+    return monitor;
   }
 
   async updateMonitor(id: number, monitor: Monitor) {
-    return this.do<Monitor>("PUT", `/v1/monitor/${id}`, monitor);
+    const res = await this.do<Monitor>("PUT", `/v1/monitor/${id}`, monitor);
+    lock.monitors[id] = monitor;
+    return monitor;
   }
 
   async deleteMonitor(id: number) {
@@ -62,15 +73,20 @@ export class Client {
   }
 
   async createSynthetic(syn: Synthetic) {
-    return this.do<Synthetic>("POST", `/v1/synthetics/tests`, syn);
+    const res = await this.do<Synthetic>("POST", `/v1/synthetics/tests`, syn);
+    syn.public_id = res.public_id;
+    lock.synthetics[syn.public_id] = syn;
+    return syn;
   }
 
   async updateSynthetic(id: string, syn: Synthetic) {
-    return this.do<{ data: HttpSynthetic }>(
+    const res = await this.do<HttpSynthetic>(
       "PUT",
       `/v1/synthetics/tests/${id}`,
       syn
     );
+    lock.synthetics[id] = syn;
+    return syn;
   }
 
   async deleteSynthetic(id: string) {
@@ -96,12 +112,14 @@ export class Client {
 
   async createSLO(slo: SLO) {
     const res = await this.do<{ data: SLO[] }>("POST", `/v1/slo`, slo);
-    return res.data[0];
+    lock.slos[res.data[0].id] = slo;
+    return slo;
   }
 
   async updateSLO(id: string, slo: SLO) {
     const res = await this.do<{ data: SLO[] }>("PUT", `/v1/slo/${id}`, slo);
-    return res.data[0];
+    lock.slos[id] = slo;
+    return slo;
   }
 
   async deleteSLO(id: string) {
@@ -476,8 +494,6 @@ if (fs.existsSync("lock.json")) {
   console.log("found old log");
   lock = JSON.parse(fs.readFileSync("lock.json").toString());
 }
-
-console.log(lock);
 
 // lock.monitors["123"] = {
 //   name: "asdf",
