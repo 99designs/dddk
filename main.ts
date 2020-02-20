@@ -12,8 +12,6 @@ import { Monitor, SLO, Synthetic } from "./src/api";
 import { lock } from "./src/api";
 import equal from "deep-equal";
 
-const fs = require("fs");
-
 const args = yargs
   .command("push <apps>", "push datadog dashboards up")
   .option("name", {
@@ -27,16 +25,6 @@ console.time("   ...completed in");
 const appFile = path.resolve(args.argv.apps as string);
 const apps = require(appFile);
 console.timeEnd("   ...completed in");
-
-function getAppModifiedDate(appname: string) {
-  const path = "./99designs/apps/";
-  const stats = fs.statSync(path + appname.toLowerCase() + ".ts");
-  return new Date(stats.mtime);
-}
-
-function parseDate(unixtime: string) {
-  return new Date(parseInt(unixtime) * 1000);
-}
 
 if (!process.env["DD_API_KEY"] || !process.env["DD_APP_KEY"]) {
   console.error(

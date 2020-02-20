@@ -3,6 +3,7 @@
  */
 
 import got, { Method } from "got";
+import * as fs from "fs";
 
 export class Client {
   private readonly apiKey: string;
@@ -481,8 +482,6 @@ export interface Lock {
   slos: { [id: string]: SLO };
 }
 
-import * as fs from "fs";
-
 export let lock: Lock = {
   monitors: {},
   dashboards: {},
@@ -496,7 +495,3 @@ if (fs.existsSync("lock.json")) {
 } else {
   console.log("WARNING: No lock file! This operation may take some time.");
 }
-
-// lock.monitors["123"] = {
-//   name: "asdf",
-// }
