@@ -491,7 +491,7 @@ export let lock: Lock = {
 };
 
 if (fs.existsSync("lock.json")) {
-  console.log("found old log");
+  console.log("Found old lock file");
   lock = JSON.parse(fs.readFileSync("lock.json").toString());
 }
 

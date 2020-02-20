@@ -79,9 +79,6 @@ const client = new api.Client(
         stats.skipped++;
         return;
       }
-      console.log(app.board);
-      console.log("!+!+!+!+!+!+!+");
-      console.log(lock.dashboards[existing.id]);
       console.log(` - Updating dashboard ${app.board.title}`);
       await client.updateDashboard(existing.id, app.board);
       stats.updated++;
@@ -108,15 +105,11 @@ const client = new api.Client(
         return existing.id;
       }
       console.log(` - Updating monitor ${monitor.name}`);
-      console.log(lock.monitors[existing.id]);
-      console.log("differs ------------------");
-      console.log(monitor);
       await client.updateMonitor(existing.id, monitor);
       stats.updated++;
       return existing.id;
     } else {
       console.log(` - Creating monitor ${monitor.name}`);
-      console.log(monitor);
       const res = await client.createMonitor(monitor);
       stats.created++;
       return res.id;
@@ -161,8 +154,6 @@ const client = new api.Client(
         return existing.id;
       }
       console.log(` - Updating ${slo.name}`);
-      console.log(slo);
-      console.log(lock.slos[existing.id]);
       await client.updateSLO(existing.id, slo);
       stats.updated++;
       return existing.id;
@@ -301,7 +292,7 @@ const client = new api.Client(
     }
   }
   //console.log(lock)
-  fs.writeFileSync("lock.json", JSON.stringify(lock));
-  console.log(`Object statstics =`, stats);
+  fs.writeFileSync("lock.json", JSON.stringify(lock, null, 2));
   console.timeEnd("   ...completed in");
+  console.log(`Object statstics =`, stats);
 })();
