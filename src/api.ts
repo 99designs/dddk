@@ -493,6 +493,8 @@ export let lock: Lock = {
 if (fs.existsSync("lock.json")) {
   console.log("Found old lock file");
   lock = JSON.parse(fs.readFileSync("lock.json").toString());
+} else {
+  console.log("WARNING: No lock file! This operation may take some time.");
 }
 
 // lock.monitors["123"] = {
