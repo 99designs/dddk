@@ -223,12 +223,6 @@ export interface MonitorSLO {
 
 export type SLO = MonitorSLO;
 
-export interface AlertGraph {
-  type: "alert_graph";
-  title?: string;
-  alert_id: string;
-  viz_type: "timeseries" | "toplist";
-}
 export interface TimeSeries {
   type: "timeseries";
   requests: (Request | ApmRequest)[];
@@ -289,8 +283,7 @@ export type WidgetDefinition =
   | SLOWidget
   | Group
   | QueryValue
-  | Change
-  | AlertGraph;
+  | Change;
 
 export interface Widget {
   definition: WidgetDefinition;

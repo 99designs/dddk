@@ -1,16 +1,11 @@
 import * as api from "./src/api";
-import {
-  App,
-  descriptionTag,
-  createdbyTag,
-  generateAlertGraphTag,
-  pushStats
-} from "./src/app";
+import { App, descriptionTag, createdbyTag, pushStats } from "./src/app";
 import * as yargs from "yargs";
 import * as path from "path";
 import { Monitor, SLO, Synthetic } from "./src/api";
 import { lock } from "./src/api";
 import equal from "deep-equal";
+import * as fs from "fs";
 
 const args = yargs
   .command("push <apps>", "push datadog dashboards up")
@@ -153,14 +148,6 @@ const client = new api.Client(
     }
   }
 
-  function addAletGraph(app: App, monitorID: number, monitor: Monitor) {
-    app.addWidget("Alert: " + monitor.name, {
-      type: "alert_graph",
-      alert_id: monitorID.toString(),
-      viz_type: "timeseries"
-    });
-  }
-
   async function pushMonitors(app: App, stats: pushStats) {
     let outageMonitorIDs: number[] = [];
 
@@ -184,20 +171,12 @@ const client = new api.Client(
     var pushedMonitorID: number;
 
     for (const monitor of app.warningMonitors) {
-      pushedMonitorID = await pushMonitor(monitor, app.name, stats);
-
-      if (monitor.tags.find(d => d == generateAlertGraphTag)) {
-        addAletGraph(app, pushedMonitorID, monitor);
-      }
+      await pushMonitor(monitor, app.name, stats);
     }
 
     for (const monitor of app.outageMonitors) {
       pushedMonitorID = await pushMonitor(monitor, app.name, stats);
       outageMonitorIDs.push(pushedMonitorID);
-
-      if (monitor.tags.find(d => d == generateAlertGraphTag)) {
-        addAletGraph(app, pushedMonitorID, monitor);
-      }
     }
 
     var sloID = "";
