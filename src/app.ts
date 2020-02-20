@@ -6,7 +6,6 @@ import { Team } from "./team";
 
 export const descriptionTag = "managed by [dddk](github.com/99designs/dddk)";
 export const createdbyTag = "created_by:dddk";
-export const generateAlertGraphTag = "alert graph active:dddk";
 
 export class App implements Container {
   name: string;
@@ -61,7 +60,7 @@ export class App implements Container {
         this.team.pagerdutyGroup +
         " " +
         this.team.slackGroup,
-      tags: ["service:" + this.name.toLowerCase(), createdbyTag].concat(tags)
+      tags: ["service:" + this.name.toLowerCase(), createdbyTag]
     });
   }
 
@@ -70,7 +69,7 @@ export class App implements Container {
       ...monitor,
       name: name,
       message: stripIndent(message) + " " + this.team.slackGroup,
-      tags: ["service:" + this.name.toLowerCase(), createdbyTag].concat(tags)
+      tags: ["service:" + this.name.toLowerCase(), createdbyTag]
     });
   }
 
@@ -87,4 +86,11 @@ export class App implements Container {
       tags: ["service:" + this.name.toLowerCase(), createdbyTag]
     });
   }
+}
+
+export interface pushStats {
+  updated: number;
+  created: number;
+  skipped: number;
+  deleted: number;
 }

@@ -3,6 +3,7 @@
  */
 
 import got, { Method } from "got";
+import * as fs from "fs";
 
 export class Client {
   private readonly apiKey: string;
@@ -22,11 +23,19 @@ export class Client {
   }
 
   async createDashboard(dashboard: Dashboard) {
-    return this.do<any>("POST", "/v1/dashboard", dashboard);
+    const res = await this.do<Dashboard>("POST", "/v1/dashboard", dashboard);
+    lock.dashboards[res.id] = dashboard;
+    return res;
   }
 
   async updateDashboard(id: string, dashboard: Dashboard) {
-    return this.do<any>("PUT", `/v1/dashboard/${id}`, dashboard);
+    const res = await this.do<Dashboard>(
+      "PUT",
+      `/v1/dashboard/${id}`,
+      dashboard
+    );
+    lock.dashboards[id] = dashboard;
+    return dashboard;
   }
 
   async deleteDashboard(id: string) {
@@ -41,11 +50,15 @@ export class Client {
   }
 
   async createMonitor(monitor: Monitor) {
-    return this.do<any>("POST", `/v1/monitor`, monitor);
+    const res = await this.do<Monitor>("POST", `/v1/monitor`, monitor);
+    lock.monitors[res.id] = monitor;
+    return monitor;
   }
 
   async updateMonitor(id: number, monitor: Monitor) {
-    return this.do<{ data: Monitor }>("PUT", `/v1/monitor/${id}`, monitor);
+    const res = await this.do<Monitor>("PUT", `/v1/monitor/${id}`, monitor);
+    lock.monitors[id] = monitor;
+    return monitor;
   }
 
   async deleteMonitor(id: number) {
@@ -61,11 +74,20 @@ export class Client {
   }
 
   async createSynthetic(syn: Synthetic) {
-    return this.do<Synthetic>("POST", `/v1/synthetics/tests`, syn);
+    const res = await this.do<Synthetic>("POST", `/v1/synthetics/tests`, syn);
+    syn.public_id = res.public_id;
+    lock.synthetics[syn.public_id] = syn;
+    return syn;
   }
 
   async updateSynthetic(id: string, syn: Synthetic) {
-    return this.do<{ data: Monitor }>("PUT", `/v1/synthetics/tests/${id}`, syn);
+    const res = await this.do<HttpSynthetic>(
+      "PUT",
+      `/v1/synthetics/tests/${id}`,
+      syn
+    );
+    lock.synthetics[id] = syn;
+    return syn;
   }
 
   async deleteSynthetic(id: string) {
@@ -90,18 +112,20 @@ export class Client {
   }
 
   async createSLO(slo: SLO) {
-    const res = await this.do<{ data: SLO }>("POST", `/v1/slo`, slo);
-    return res.data;
+    const res = await this.do<{ data: SLO[] }>("POST", `/v1/slo`, slo);
+    lock.slos[res.data[0].id] = slo;
+    return slo;
   }
 
   async updateSLO(id: string, slo: SLO) {
-    const res = await this.do<{ data: SLO }>("PUT", `/v1/slo/${id}`, slo);
-    return res.data;
+    const res = await this.do<{ data: SLO[] }>("PUT", `/v1/slo/${id}`, slo);
+    lock.slos[id] = slo;
+    return slo;
   }
 
   async deleteSLO(id: string) {
-    const res = await this.do<{ data: SLO }>("DELETE", `/v1/slo/${id}`);
-    return res.data;
+    const res = await this.do<{ data: SLO[] }>("DELETE", `/v1/slo/${id}`);
+    return res.data[0];
   }
 
   private async do<T>(method: Method, url: string, body?: any): Promise<T> {
@@ -134,6 +158,7 @@ export interface QueryMonitor {
   name?: string;
   message: string;
   tags?: string[];
+  modified?: Date;
   options: MonitorOptions;
 }
 
@@ -144,6 +169,7 @@ export interface MetricMonitor {
   name?: string;
   message: string;
   tags?: string[];
+  modified?: Date;
   options: MonitorOptions;
 }
 
@@ -191,18 +217,12 @@ export interface MonitorSLO {
   type: "monitor";
   monitor_ids: number[];
   groups?: string[];
-  created?: Date;
-  modified?: Date;
+  created_at?: string;
+  modified_at?: string;
 }
 
 export type SLO = MonitorSLO;
 
-export interface AlertGraph {
-  type: "alert_graph";
-  title?: string;
-  alert_id: string;
-  viz_type: "timeseries" | "toplist";
-}
 export interface TimeSeries {
   type: "timeseries";
   requests: (Request | ApmRequest)[];
@@ -263,8 +283,7 @@ export type WidgetDefinition =
   | SLOWidget
   | Group
   | QueryValue
-  | Change
-  | AlertGraph;
+  | Change;
 
 export interface Widget {
   definition: WidgetDefinition;
@@ -375,7 +394,7 @@ export interface TemplateVariable {
 }
 
 export interface DashboardSummary {
-  created_at: string;
+  created_at: Date;
   is_read_only: boolean;
   description: string;
   title: string;
@@ -444,6 +463,28 @@ export interface HttpSynthetic {
     };
   };
   message: string;
+  modified_at?: string;
 }
 
 export type Synthetic = HttpSynthetic;
+
+export interface Lock {
+  monitors: { [id: string]: Monitor };
+  dashboards: { [id: string]: Dashboard };
+  synthetics: { [public_id: string]: Synthetic };
+  slos: { [id: string]: SLO };
+}
+
+export let lock: Lock = {
+  monitors: {},
+  dashboards: {},
+  synthetics: {},
+  slos: {}
+};
+
+if (fs.existsSync("lock.json")) {
+  console.log("Found old lock file");
+  lock = JSON.parse(fs.readFileSync("lock.json").toString());
+} else {
+  console.log("WARNING: No lock file! This operation may take some time.");
+}
