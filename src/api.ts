@@ -4,14 +4,34 @@
 
 import got, { Method } from "got";
 import * as fs from "fs";
+import equal from "deep-equal";
 
 export class Client {
   private readonly apiKey: string;
   private readonly applicationKey: string;
+  private lock: Lock = {
+    monitors: {},
+    dashboards: {},
+    synthetics: {},
+    slos: {}
+  };
 
-  constructor(apiKey: string, applicationKey: string) {
+  stats: pushStats = {
+    skipped: 0,
+    updated: 0,
+    created: 0,
+    deleted: 0
+  };
+
+  constructor(apiKey: string, applicationKey: string, lock?: Lock) {
     this.apiKey = apiKey;
     this.applicationKey = applicationKey;
+
+    if (lock) {
+      this.lock = lock;
+    } else if (fs.existsSync("lock.json")) {
+      this.lock = JSON.parse(fs.readFileSync("lock.json").toString());
+    }
   }
 
   async getDashboards() {
@@ -22,23 +42,31 @@ export class Client {
     return res.dashboards;
   }
 
-  async createDashboard(dashboard: Dashboard) {
+  async createDashboard(dashboard: Dashboard): Promise<string> {
     const res = await this.do<Dashboard>("POST", "/v1/dashboard", dashboard);
-    lock.dashboards[res.id] = dashboard;
-    return res;
+    this.lock.dashboards[res.id] = dashboard;
+    this.stats.created++;
+    return res.id;
   }
 
-  async updateDashboard(id: string, dashboard: Dashboard) {
-    const res = await this.do<Dashboard>(
-      "PUT",
-      `/v1/dashboard/${id}`,
-      dashboard
-    );
-    lock.dashboards[id] = dashboard;
-    return dashboard;
+  async updateDashboard(id: string, dashboard: Dashboard): Promise<boolean> {
+    if (!equal(this.lock.dashboards[id], dashboard)) {
+      const res = await this.do<Dashboard>(
+        "PUT",
+        `/v1/dashboard/${id}`,
+        dashboard
+      );
+      this.lock.dashboards[id] = dashboard;
+      this.stats.updated++;
+
+      return true;
+    }
+    this.stats.skipped++;
+    return false;
   }
 
   async deleteDashboard(id: string) {
+    this.stats.deleted++;
     return this.do<any>("DELETE", `/v1/dashboard/${id}`);
   }
 
@@ -51,17 +79,26 @@ export class Client {
 
   async createMonitor(monitor: Monitor) {
     const res = await this.do<Monitor>("POST", `/v1/monitor`, monitor);
-    lock.monitors[res.id] = monitor;
+    this.lock.monitors[res.id] = monitor;
+    this.stats.created++;
     return res.id;
   }
 
-  async updateMonitor(id: number, monitor: Monitor) {
-    const res = await this.do<Monitor>("PUT", `/v1/monitor/${id}`, monitor);
-    lock.monitors[id] = monitor;
-    return monitor;
+  async updateMonitor(id: number, monitor: Monitor): Promise<boolean> {
+    if (!equal(this.lock.monitors[id], monitor)) {
+      const res = await this.do<Monitor>("PUT", `/v1/monitor/${id}`, monitor);
+      this.lock.monitors[id] = monitor;
+      this.stats.updated++;
+
+      return true;
+    } else {
+      this.stats.skipped++;
+      return false;
+    }
   }
 
   async deleteMonitor(id: number) {
+    this.stats.skipped++;
     return this.do<any>("DELETE", `/v1/monitor/${id}`);
   }
 
@@ -73,24 +110,27 @@ export class Client {
     return res.tests;
   }
 
-  async createSynthetic(syn: Synthetic) {
+  async createSynthetic(syn: Synthetic): Promise<string> {
     const res = await this.do<Synthetic>("POST", `/v1/synthetics/tests`, syn);
-    syn.public_id = res.public_id;
-    lock.synthetics[syn.public_id] = syn;
-    return syn;
+    this.lock.synthetics[res.public_id] = syn;
+    this.stats.created++;
+    return res.public_id;
   }
 
-  async updateSynthetic(id: string, syn: Synthetic) {
-    const res = await this.do<HttpSynthetic>(
-      "PUT",
-      `/v1/synthetics/tests/${id}`,
-      syn
-    );
-    lock.synthetics[id] = syn;
-    return syn;
+  async updateSynthetic(id: string, syn: Synthetic): Promise<boolean> {
+    if (!equal(this.lock.synthetics[id], syn)) {
+      this.do<HttpSynthetic>("PUT", `/v1/synthetics/tests/${id}`, syn);
+      this.lock.synthetics[id] = syn;
+      this.stats.updated++;
+
+      return true;
+    }
+    this.stats.skipped++;
+    return false;
   }
 
   async deleteSynthetic(id: string) {
+    this.stats.deleted++;
     return this.do<any>("POST", `/v1/synthetics/tests/delete`, {
       public_ids: [id]
     });
@@ -113,20 +153,28 @@ export class Client {
     return res.data;
   }
 
-  async createSLO(slo: SLO) {
+  async createSLO(slo: SLO): Promise<string> {
     const res = await this.do<{ data: SLO[] }>("POST", `/v1/slo`, slo);
-    lock.slos[res.data[0].id] = slo;
-    return res.data[0];
+    this.lock.slos[res.data[0].id] = slo;
+    this.stats.created++;
+    return res.data[0].id;
   }
 
-  async updateSLO(id: string, slo: SLO) {
-    const res = await this.do<{ data: SLO[] }>("PUT", `/v1/slo/${id}`, slo);
-    lock.slos[id] = slo;
-    return slo;
+  async updateSLO(id: string, slo: SLO): Promise<boolean> {
+    if (!equal(this.lock.slos[id], slo)) {
+      this.do<{ data: SLO[] }>("PUT", `/v1/slo/${id}`, slo);
+      this.lock.slos[id] = slo;
+      this.stats.updated++;
+
+      return true;
+    }
+    this.stats.skipped++;
+    return false;
   }
 
   async deleteSLO(id: string) {
     const res = await this.do<{ data: SLO[] }>("DELETE", `/v1/slo/${id}`);
+    this.stats.deleted++;
     return res.data[0];
   }
 
@@ -150,6 +198,10 @@ export class Client {
         throw error;
       }
     }
+  }
+
+  saveLock() {
+    fs.writeFileSync("lock.json", JSON.stringify(this.lock, null, 2));
   }
 }
 
@@ -477,16 +529,9 @@ export interface Lock {
   slos: { [id: string]: SLO };
 }
 
-export let lock: Lock = {
-  monitors: {},
-  dashboards: {},
-  synthetics: {},
-  slos: {}
-};
-
-if (fs.existsSync("lock.json")) {
-  console.log("Found old lock file");
-  lock = JSON.parse(fs.readFileSync("lock.json").toString());
-} else {
-  console.log("WARNING: No lock file! This operation may take some time.");
+export interface pushStats {
+  updated: number;
+  created: number;
+  skipped: number;
+  deleted: number;
 }

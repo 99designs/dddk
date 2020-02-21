@@ -87,10 +87,3 @@ export class App implements Container {
     });
   }
 }
-
-export interface pushStats {
-  updated: number;
-  created: number;
-  skipped: number;
-  deleted: number;
-}

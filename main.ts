@@ -1,10 +1,8 @@
 import * as api from "./src/api";
-import { App, descriptionTag, createdbyTag, pushStats } from "./src/app";
+import { App, descriptionTag, createdbyTag } from "./src/app";
 import * as yargs from "yargs";
 import * as path from "path";
 import { Monitor, SLO, Synthetic } from "./src/api";
-import { lock } from "./src/api";
-import equal from "deep-equal";
 import * as fs from "fs";
 
 const args = yargs
@@ -53,107 +51,76 @@ const client = new api.Client(
 
   console.timeEnd(`   ...completed in`);
 
-  async function pushDashboard(app: App, stats: pushStats) {
+  async function pushDashboard(app: App) {
     const existing = dashboards.find(d => d.title == app.board.title);
 
     if (existing) {
       existing.seen = true;
-      if (equal(lock.dashboards[existing.id], app.board)) {
-        stats.skipped++;
-        return;
+      if (await client.updateDashboard(existing.id, app.board)) {
+        console.log(` - Updated dashboard ${app.board.title}`);
       }
-      console.log(` - Updating dashboard ${app.board.title}`);
-      await client.updateDashboard(existing.id, app.board);
-      stats.updated++;
     } else {
-      console.log(` - Creating dashboard ${app.board.title}`);
-      const res = await client.createDashboard(app.board);
-      stats.created++;
+      client.createDashboard(app.board);
+      console.log(` - Created dashboard ${app.board.title}`);
     }
   }
 
-  async function pushMonitor(
-    monitor: Monitor,
-    appname: string,
-    stats: pushStats
-  ): Promise<number> {
+  async function pushMonitor(monitor: Monitor): Promise<number> {
     const existing = monitors.find(
       d => d.name == monitor.name && d.tags[0] == monitor.tags[0]
     );
 
     if (existing) {
       existing.seen = true;
-      if (equal(lock.monitors[existing.id], monitor)) {
-        stats.skipped++;
-        return existing.id;
+      if (await client.updateMonitor(existing.id, monitor)) {
+        console.log(` - Updated monitor ${monitor.name}`);
       }
-      console.log(` - Updating monitor ${monitor.name}`);
-      await client.updateMonitor(existing.id, monitor);
-      stats.updated++;
       return existing.id;
     } else {
-      console.log(` - Creating monitor ${monitor.name}`);
-      const res = await client.createMonitor(monitor);
-      stats.created++;
-      return res;
+      const newID = await client.createMonitor(monitor);
+      console.log(` - Created monitor ${monitor.name}`);
+      return newID;
     }
   }
 
-  async function pushSynthetic(
-    syn: Synthetic,
-    appname: string,
-    stats: pushStats
-  ) {
+  async function pushSynthetic(syn: Synthetic): Promise<string> {
     const existing = synthetics.find(
       d => d.name == syn.name && d.tags[0] == syn.tags[0]
     );
     if (existing) {
-      // the synthetic exists on datadog servers
       existing.seen = true;
-
-      if (equal(syn, lock.synthetics[existing.public_id])) {
-        stats.skipped++;
-        return syn.public_id;
+      if (await client.updateSynthetic(existing.public_id, syn)) {
+        console.log(` - Updated synthetic ${syn.name}`);
       }
-      console.log(` - Updating synthetic ${syn.name}`);
-      await client.updateSynthetic(existing.public_id, syn);
-      stats.updated++;
-      return syn.public_id;
+      return existing.public_id;
     } else {
-      console.log(` - Creating synthetic ${syn.name}`);
-      const res = await client.createSynthetic(syn);
-      stats.created++;
-      return res.public_id;
+      const newPublicID = await client.createSynthetic(syn);
+      console.log(` - Created synthetic ${syn.name}`);
+      return newPublicID;
     }
   }
 
-  async function pushSLO(slo: SLO, appname: string, stats: pushStats) {
+  async function pushSLO(slo: SLO): Promise<string> {
     const existing = slos.find(d => d.name == slo.name);
 
     if (existing) {
       existing.seen = true;
-      // slos record time in UNIX format
-      if (equal(slo, lock.slos[existing.id])) {
-        stats.skipped++;
-        return existing.id;
+      if (await client.updateSLO(existing.id, slo)) {
+        console.log(` - Updated ${slo.name}`);
       }
-      console.log(` - Updating ${slo.name}`);
-      await client.updateSLO(existing.id, slo);
-      stats.updated++;
       return existing.id;
     } else {
-      console.log(` - Creating ${slo.name}`);
-      const res = await client.createSLO(slo);
-      stats.created++;
-      return res.id;
+      const newID = await client.createSLO(slo);
+      console.log(` - Created ${slo.name}`);
+      return newID;
     }
   }
 
-  async function pushMonitors(app: App, stats: pushStats) {
+  async function pushMonitors(app: App) {
     let outageMonitorIDs: number[] = [];
 
     for (const syn of app.synthetics) {
-      await pushSynthetic(syn, app.name, stats);
+      await pushSynthetic(syn);
 
       // the api filter doesnt work, searching within the api call
       const syntheticMonitor = (
@@ -172,28 +139,24 @@ const client = new api.Client(
     var pushedMonitorID: number;
 
     for (const monitor of app.warningMonitors) {
-      await pushMonitor(monitor, app.name, stats);
+      pushMonitor(monitor);
     }
 
     for (const monitor of app.outageMonitors) {
-      pushedMonitorID = await pushMonitor(monitor, app.name, stats);
+      pushedMonitorID = await pushMonitor(monitor);
       outageMonitorIDs.push(pushedMonitorID);
     }
 
     var sloID = "";
     if (outageMonitorIDs.length > 0) {
-      sloID = await pushSLO(
-        {
-          type: "monitor",
-          name: `${app.name} SLO`,
-          description: `Track the uptime of ${app.name} ` + app.team.slackGroup,
-          monitor_ids: outageMonitorIDs,
-          thresholds: [{ timeframe: "30d", target: 99.9, warning: 99.95 }],
-          tags: [`service:${app.name}`, createdbyTag]
-        },
-        app.name,
-        stats
-      );
+      sloID = await pushSLO({
+        type: "monitor",
+        name: `${app.name} SLO`,
+        description: `Track the uptime of ${app.name} ` + app.team.slackGroup,
+        monitor_ids: outageMonitorIDs,
+        thresholds: [{ timeframe: "30d", target: 99.9, warning: 99.95 }],
+        tags: [`service:${app.name}`, createdbyTag]
+      });
 
       app.board.widgets.unshift({
         definition: {
@@ -213,54 +176,41 @@ const client = new api.Client(
   console.log("Pushing local changes to DataDog...");
   console.time("   ...completed in");
 
-  var stats: pushStats = { skipped: 0, updated: 0, created: 0, deleted: 0 };
-
   for (const app of apps.default) {
     if (
       args.argv.name &&
       args.argv.name.toLowerCase() !== app.board.title.toLowerCase()
-      //&& (getAppModifiedDate(d.name) > new Date(d.modified))
     ) {
       continue;
     }
-    // generate all monitors and dashboards
-
-    // compare to lock
-
-    // push changes
-    await pushMonitors(app, stats);
-    await pushDashboard(app, stats);
+    await pushMonitors(app);
+    await pushDashboard(app);
   }
 
   if (!args.argv.name) {
     for (const d of slos.filter(d => !d.seen)) {
       console.log(` - Deleting slo ${d.name}`);
       await client.deleteSLO(d.id);
-      stats.deleted++;
     }
 
     for (const d of dashboards.filter(d => !d.seen)) {
-      console.log(` - Deleting dashboard ${d.title}`);
       await client.deleteDashboard(d.id);
-      stats.deleted++;
+      console.log(` - Deleted dashboard ${d.title}`);
     }
 
     for (const d of monitors.filter(
       d => !d.seen && !d.name.includes("[Synthetics]")
     )) {
-      console.log(` - Deleting monitor ${d.name}`);
       await client.deleteMonitor(d.id);
-      stats.deleted++;
+      console.log(` - Deleted monitor ${d.name}`);
     }
 
     for (const d of synthetics.filter(d => !d.seen)) {
-      console.log(` - Deleting synthetic ${d.name}`);
       await client.deleteSynthetic(d.public_id);
-      stats.deleted++;
+      console.log(` - Deleted synthetic ${d.name}`);
     }
   }
-  //console.log(lock)
-  fs.writeFileSync("lock.json", JSON.stringify(lock, null, 2));
+  client.saveLock();
   console.timeEnd("   ...completed in");
-  console.log(`Object statstics =`, stats);
+  console.log(`Object statstics =`, client.stats);
 })();
