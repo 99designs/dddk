@@ -104,8 +104,9 @@ const client = new api.Client(
     appname: string,
     stats: pushStats
   ) {
-    const existing = synthetics.find(d => d.name == syn.name);
-
+    const existing = synthetics.find(
+      d => d.name == syn.name && d.tags[0] == syn.tags[0]
+    );
     if (existing) {
       // the synthetic exists on datadog servers
       existing.seen = true;
@@ -232,6 +233,12 @@ const client = new api.Client(
   }
 
   if (!args.argv.name) {
+    for (const d of slos.filter(d => !d.seen)) {
+      console.log(` - Deleting slo ${d.name}`);
+      await client.deleteSLO(d.id);
+      stats.deleted++;
+    }
+
     for (const d of dashboards.filter(d => !d.seen)) {
       console.log(` - Deleting dashboard ${d.title}`);
       await client.deleteDashboard(d.id);
@@ -243,12 +250,6 @@ const client = new api.Client(
     )) {
       console.log(` - Deleting monitor ${d.name}`);
       await client.deleteMonitor(d.id);
-      stats.deleted++;
-    }
-
-    for (const d of slos.filter(d => !d.seen)) {
-      console.log(` - Deleting slo ${d.name}`);
-      await client.deleteSLO(d.id);
       stats.deleted++;
     }
 
