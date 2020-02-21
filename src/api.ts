@@ -91,7 +91,9 @@ export class Client {
   }
 
   async deleteSynthetic(id: string) {
-    return this.do<any>("DELETE", `/v1/synthetics/tests/${id}`);
+    return this.do<any>("POST", `/v1/synthetics/tests/delete`, {
+      public_ids: [id]
+    });
   }
 
   async getSLOs(query: string = "") {
