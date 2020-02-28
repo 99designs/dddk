@@ -3,7 +3,6 @@ import { App, descriptionTag, createdbyTag } from "./src/app";
 import * as yargs from "yargs";
 import * as path from "path";
 import { Monitor, SLO, Synthetic } from "./src/api";
-import * as fs from "fs";
 
 const args = yargs
   .command("push <apps>", "push datadog dashboards up")

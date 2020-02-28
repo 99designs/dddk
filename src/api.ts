@@ -9,7 +9,7 @@ import equal from "deep-equal";
 export class Client {
   private readonly apiKey: string;
   private readonly applicationKey: string;
-  private lock: Lock = {
+  private readonly lock: Lock = {
     monitors: {},
     dashboards: {},
     synthetics: {},
