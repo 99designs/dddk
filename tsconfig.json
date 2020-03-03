@@ -3,8 +3,9 @@
     "lib": ["ES2015"],
     "module": "commonjs",
     "esModuleInterop": true,
-    "isolatedModules": true,
     "pretty": true,
-    "noEmit": true
+    "noEmit": true,
+    "downlevelIteration": true,
+    "target": "es5"
   }
 }

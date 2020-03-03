@@ -1,12 +1,12 @@
 import { Component, Container } from "./types";
 import { Group, Monitor, Synthetic, TimeSeries, TopList } from "./api";
 
-export default function Group(name: string, children: Component[]): Component {
+export function Group(name: string, children: Component[]): Component {
   return container => {
     const group: Group = {
       layout_type: "ordered",
       type: "group",
-      widgets: []
+      widgets: [],
     };
 
     const groupContainer: Container = {
@@ -24,10 +24,10 @@ export default function Group(name: string, children: Component[]): Component {
         group.widgets.push({
           definition: {
             ...widget,
-            title: name
-          }
+            title: name,
+          },
         });
-      }
+      },
     };
 
     for (const child of children) {

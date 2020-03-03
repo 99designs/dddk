@@ -1,11 +1,8 @@
 import * as api from "./api";
 import { Component, Container } from "./types";
 import { Monitor, Synthetic } from "./api";
-import { stripIndent } from "./stripIndent";
 import { Team } from "./team";
-
-export const descriptionTag = "managed by [dddk](github.com/99designs/dddk)";
-export const createdbyTag = "created_by:dddk";
+import { stripIndent } from "common-tags";
 
 export class App implements Container {
   name: string;
@@ -18,7 +15,7 @@ export class App implements Container {
   constructor({
     name,
     team,
-    components
+    components,
   }: {
     name: string;
     team: Team;
@@ -27,9 +24,8 @@ export class App implements Container {
     this.name = name;
     this.board = {
       title: name,
-      description: descriptionTag,
       layout_type: "ordered",
-      widgets: []
+      widgets: [],
     };
     this.team = team;
     this.warningMonitors = [];
@@ -45,8 +41,8 @@ export class App implements Container {
     this.board.widgets.push({
       definition: {
         ...widget,
-        title: title
-      }
+        title: title,
+      },
     });
   }
 
@@ -60,7 +56,7 @@ export class App implements Container {
         this.team.pagerdutyGroup +
         " " +
         this.team.slackGroup,
-      tags: ["service:" + this.name.toLowerCase(), createdbyTag]
+      tags: tags ? tags : ["service:" + this.name.toLowerCase()],
     });
   }
 
@@ -69,7 +65,7 @@ export class App implements Container {
       ...monitor,
       name: name,
       message: stripIndent(message) + " " + this.team.slackGroup,
-      tags: ["service:" + this.name.toLowerCase(), createdbyTag]
+      tags: tags ? tags : ["service:" + this.name.toLowerCase()],
     });
   }
 
@@ -83,7 +79,7 @@ export class App implements Container {
         this.team.pagerdutyGroup +
         " " +
         this.team.slackGroup,
-      tags: ["service:" + this.name.toLowerCase(), createdbyTag]
+      tags: tags ? tags : ["service:" + this.name.toLowerCase()],
     });
   }
 }
