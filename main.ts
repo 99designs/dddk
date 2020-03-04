@@ -99,7 +99,7 @@ yargs
             type: "monitor",
             name: `${app.name} SLO`,
             description:
-              `Track the uptime of ${app.name} ` + app.team.slackGroup,
+              `Track the uptime of ${app.name} ` + app.team.warningContact,
             monitor_ids: outageMonitorIDs,
             thresholds: [{ timeframe: "30d", target: 99.9, warning: 99.95 }],
             tags: [`service:${app.name}`],

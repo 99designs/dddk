@@ -53,9 +53,9 @@ export class App implements Container {
       message:
         stripIndent(message) +
         " " +
-        this.team.pagerdutyGroup +
+        this.team.alertContact +
         " " +
-        this.team.slackGroup,
+        this.team.warningContact,
       tags: tags ? tags : ["service:" + this.name.toLowerCase()],
     });
   }
@@ -64,7 +64,7 @@ export class App implements Container {
     this.warningMonitors.push({
       ...monitor,
       name: name,
-      message: stripIndent(message) + " " + this.team.slackGroup,
+      message: stripIndent(message) + " " + this.team.warningContact,
       tags: tags ? tags : ["service:" + this.name.toLowerCase()],
     });
   }
@@ -76,9 +76,9 @@ export class App implements Container {
       message:
         stripIndent(message) +
         " " +
-        this.team.pagerdutyGroup +
+        this.team.alertContact +
         " " +
-        this.team.slackGroup,
+        this.team.warningContact,
       tags: tags ? tags : ["service:" + this.name.toLowerCase()],
     });
   }

@@ -1,4 +1,4 @@
 export interface Team {
-  slackGroup: string;
-  pagerdutyGroup: string;
+  warningContact: string;
+  alertContact: string;
 }
