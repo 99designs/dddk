@@ -1,0 +1,6 @@
+/.editorconfig
+/.gitignore
+/.prettierrc
+/.idea
+/jest.config.js
+*.test.ts
