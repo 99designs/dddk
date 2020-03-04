@@ -9,8 +9,7 @@
   "scripts": {
     "test": "jest"
   },
-  "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@types/deep-equal": "^1.0.1",
     "@types/diff": "^4.0.2",
