@@ -1,11 +1,19 @@
 {
   "compilerOptions": {
-    "lib": ["ES2015"],
+    "lib": ["es2017"],
     "module": "commonjs",
     "esModuleInterop": true,
     "pretty": true,
-    "noEmit": true,
     "downlevelIteration": true,
-    "target": "es5"
-  }
+    "target": "es2017",
+    "moduleResolution": "node",
+    "resolveJsonModule": true
+  },
+  "include": [
+    "**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts"
+  ]
 }

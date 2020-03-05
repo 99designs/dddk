@@ -1,9 +1,15 @@
+#! /usr/bin/env node
+
 import { App, Client } from "./src";
 import { Syncer } from "./src/syncer";
 import * as yargs from "yargs";
 import * as fs from "fs";
 import * as glob from "glob";
 import * as path from "path";
+import tsconfig from "./tsconfig.json";
+import { register } from "ts-node";
+
+register(tsconfig);
 
 if (!process.env["DD_API_KEY"] || !process.env["DD_APP_KEY"]) {
   console.error("DD_API_KEY and DD_APP_KEY must be set");
@@ -50,9 +56,12 @@ yargs
         process.env["DD_APP_KEY"],
       );
 
-      const lock = JSON.parse(
-        fs.readFileSync(process.cwd() + "/lock.json").toString(),
-      );
+      const lockFile = process.cwd() + "/lock.json";
+
+      let lock: any = {};
+      if (fs.existsSync(lockFile)) {
+        lock = JSON.parse(fs.readFileSync(lockFile).toString());
+      }
 
       console.log(`Fetching data from DataDog...`);
       console.time("   ...completed in");
@@ -126,10 +135,7 @@ yargs
         await syncer.deleteUnseen();
       }
 
-      fs.writeFileSync(
-        process.cwd() + "/lock.json",
-        JSON.stringify(syncer.lock, null, 2),
-      );
+      fs.writeFileSync(lockFile, JSON.stringify(syncer.lock, null, 2));
 
       console.timeEnd("   ...completed in");
       console.log(`Object statstics =`, syncer.stats);
