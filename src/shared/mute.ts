@@ -1,4 +1,4 @@
-import { Component, Container, api } from "../src";
+import { Component, Container, api } from "../index";
 
 // Ignore the monitors that an app exports. This can be handy when spinning up
 // a new service that is not yet seeing production traffic, but you want the

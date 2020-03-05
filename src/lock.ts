@@ -105,6 +105,5 @@ function printColorDiff(a: any, b: any) {
     } else {
       process.stdout.write(chalk.white(change.value));
     }
-    process.stdout.write("\n");
   }
 }

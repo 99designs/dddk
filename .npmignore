@@ -4,5 +4,7 @@
 /.idea
 /jest.config.js
 /.github
-*.test.ts
+
+*.ts
+!*.d.ts
 *.md

@@ -6,10 +6,9 @@ import * as yargs from "yargs";
 import * as fs from "fs";
 import * as glob from "glob";
 import * as path from "path";
-import tsconfig from "./tsconfig.json";
 import { register } from "ts-node";
 
-register(tsconfig);
+register();
 
 if (!process.env["DD_API_KEY"] || !process.env["DD_APP_KEY"]) {
   console.error("DD_API_KEY and DD_APP_KEY must be set");

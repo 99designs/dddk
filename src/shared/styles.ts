@@ -1,4 +1,4 @@
-import { Style } from "../src/api";
+import { Style } from "../api";
 
 export const memoryStyle: Style = {
   palette: "cool",

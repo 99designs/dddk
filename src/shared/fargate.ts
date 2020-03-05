@@ -1,5 +1,5 @@
 import { cpuStyle, memoryStyle, weekBeforeStyle } from "./styles";
-import { Component } from "../src";
+import { Component } from "../index";
 
 // fargate ecs stacks, not plain ECS
 export default function fargate(ecs_task_family: string): Component {

@@ -1,19 +1,22 @@
 {
   "compilerOptions": {
     "lib": ["es2017"],
+    "types": ["node"],
     "module": "commonjs",
     "esModuleInterop": true,
     "pretty": true,
     "downlevelIteration": true,
     "target": "es2017",
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "declaration": true,
+    "outDir": "dist"
   },
   "include": [
     "**/*"
   ],
   "exclude": [
     "node_modules",
+    "dist",
     "**/*.test.ts"
   ]
 }

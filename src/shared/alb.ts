@@ -1,4 +1,4 @@
-import { Component } from "../src";
+import { Component } from "../index";
 import { errorStyle, trafficStyle, weekBeforeStyle } from "./styles";
 
 export default function alb(name: string, titlePrefix: string = ""): Component {

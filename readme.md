@@ -43,6 +43,6 @@ applications. Without dddk, ecosystem wide changes are tedious to apply and pron
 
 Objects are matched based on title, which include the `created by:dddk` tag.
 
-Dashboards are updated which have `managed by [dddk]github.com/99designs/dddk)` in the description.
+Dashboards are updated which have "managed by [dddk](github.com/99designs/dddk)" in the description.
 
 A lock file keeps track of the expected state on DataDog - only pushing the modified objects.

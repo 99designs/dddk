@@ -6,7 +6,7 @@ import {
   upperBoundStyle,
 } from "./styles";
 
-import { Component } from "../src";
+import { Component } from "../index";
 
 export default function rds(...dbname: string[]): Component {
   return container => {

@@ -1,4 +1,4 @@
-import { Component } from "../src";
+import { Component } from "../index";
 
 // Creates a simple datadog synthetic that pings your app.
 export default function healthcheck(url: string): Component {

@@ -4,3 +4,4 @@ export * from "./client";
 export * from "./group";
 export * from "./types";
 export * from "./team";
+export * as shared from './shared';

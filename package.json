@@ -1,19 +1,22 @@
 {
   "name": "dddk",
-  "version": "0.0.4",
+  "version": "0.0.11",
   "description": "Datadog Development Kit",
-  "main": "src/index.ts",
+  "main": "dist/src/index.js",
   "bin": {
-    "dddk": "./dddk.js"
+    "dddk": "dist/dddk.js"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "prepublish": "rm -rf dist && tsc"
   },
+  "types": "dist/src/index.d.ts",
   "license": "MIT",
   "dependencies": {
     "@types/deep-equal": "^1.0.1",
     "@types/diff": "^4.0.2",
     "@types/glob": "^7.1.1",
+    "@types/node": "^13.7.7",
     "@types/yargs": "^15.0.4",
     "chalk": "^3.0.0",
     "common-tags": "^1.8.0",
