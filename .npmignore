@@ -3,4 +3,6 @@
 /.prettierrc
 /.idea
 /jest.config.js
+/.github
 *.test.ts
+*.md
