@@ -1,12 +1,13 @@
 #! /usr/bin/env node
 
 import { App, Client } from "./src";
-import { Syncer } from "./src/syncer";
+import { LockFile, Syncer } from "./src/syncer";
 import * as yargs from "yargs";
 import * as fs from "fs";
 import * as glob from "glob";
 import * as path from "path";
 import { register } from "ts-node";
+import log from "./src/log";
 
 register();
 
@@ -31,7 +32,7 @@ yargs
         });
     },
     async (argv: any) => {
-      console.log(`Parsing local apps...`);
+      log.info(`Parsing local apps...`);
       console.time("   ...completed in");
 
       const apps: App[] = [];
@@ -57,18 +58,24 @@ yargs
 
       const lockFile = process.cwd() + "/lock.json";
 
-      let lock: any = {};
+      let lock: LockFile = {
+        monitors: {},
+        dashboards: {},
+        synthetics: {},
+        slos: {},
+      };
       if (fs.existsSync(lockFile)) {
+        log.info(`reading lock from ${lockFile}`)
         lock = JSON.parse(fs.readFileSync(lockFile).toString());
       }
 
-      console.log(`Fetching data from DataDog...`);
+      log.info(`Fetching data from DataDog...`);
       console.time("   ...completed in");
       const syncer = await Syncer.create(client, lock);
 
       console.timeEnd(`   ...completed in`);
 
-      console.log("Pushing local changes to DataDog...");
+      log.info("Pushing local changes to DataDog...");
       console.time("   ...completed in");
 
       for (const app of apps) {
@@ -137,7 +144,7 @@ yargs
       fs.writeFileSync(lockFile, JSON.stringify(syncer.lock, null, 2));
 
       console.timeEnd("   ...completed in");
-      console.log(`Object statstics =`, syncer.stats);
+      log.info(`stats =`, JSON.stringify(syncer.stats, null, 2));
     },
   )
   .demandCommand(1, "Must specify a command, did you mean dddk push?").argv;

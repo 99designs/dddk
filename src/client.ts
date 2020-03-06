@@ -1,5 +1,6 @@
 import * as api from "./api";
 import got, { Method } from "got";
+import log from "./log";
 
 // Most of the datadog api filters dont work or are broken in weird ways.
 // this abstracts over the requirements, and most of the time we end up
@@ -154,7 +155,7 @@ export class Client {
   }
 
   private async do<T>(method: Method, url: string, body?: any): Promise<T> {
-    console.log(method, "https://api.datadoghq.com/api" + url);
+    log.debug(method, "https://api.datadoghq.com/api" + url);
     try {
       const resp = await got("https://api.datadoghq.com/api" + url, {
         headers: {
@@ -167,12 +168,6 @@ export class Client {
         timeout: 20000,
         body: body ? JSON.stringify(body, null, " ") : undefined,
       });
-
-      for (const headerName in resp.headers) {
-        if (!headerName.startsWith("X-RateLimit")) continue;
-
-        console.log(headerName, resp.headers[headerName]);
-      }
 
       return JSON.parse(resp.body) as T;
     } catch (error) {

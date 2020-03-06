@@ -1,6 +1,7 @@
 import equal from "deep-equal";
 import { diffWords } from "diff";
 import chalk from "chalk";
+import log from "./log";
 
 interface Ref {
   id: string;
@@ -55,7 +56,7 @@ export class Lock<DataType> {
     }
 
     if (ref) {
-      console.log(`Updating ${this.options.name} ${name}...`);
+      log.info(`Updating ${this.options.name} ${name}...`);
       if (this.options.data[ref.id]) {
         printColorDiff(this.options.data[ref.id], item);
       }
@@ -67,7 +68,7 @@ export class Lock<DataType> {
       return ref.id;
     } else {
       const id = await this.options.onCreate(item);
-      console.log(`Creating ${this.options.name} ${name}...`);
+      log.info(`Creating ${this.options.name} ${name}...`);
       this.refs.set(name, { id: id, synced: true });
       this.stats.created++;
       this.options.data[id] = item;
@@ -80,7 +81,7 @@ export class Lock<DataType> {
     for (const [name, ref] of this.refs) {
       if (ref.synced) continue;
 
-      console.log(`Deleting ${this.options.name} ${name}...`);
+      log.info(`Deleting ${this.options.name} ${name}...`);
       await this.options.onDelete(ref.id);
       this.stats.deleted++;
     }

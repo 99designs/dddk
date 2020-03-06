@@ -12,7 +12,7 @@ interface State {
   slos: Lock<SLO>;
 }
 
-interface LockFile {
+export interface LockFile {
   monitors: LockData<Monitor>;
   dashboards: LockData<Dashboard>;
   synthetics: LockData<Synthetic>;

@@ -9,6 +9,7 @@
     "target": "es2017",
     "moduleResolution": "node",
     "declaration": true,
+    "declarationMap": true,
     "outDir": "dist"
   },
   "include": [
