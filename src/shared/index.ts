@@ -4,6 +4,7 @@ export {default as fargate}  from "./fargate";
 export {default as healthcheck}  from "./healthcheck";
 export {default as mute}  from "./mute";
 export {default as rds}  from "./rds";
+export {default as burstablerds} from "./burstablerds";
 export * from "./styles";
 
 
