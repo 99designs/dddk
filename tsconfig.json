@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "lib": ["es2017"],
-    "types": ["node"],
+    "types": ["node", "@types/jest"],
     "module": "commonjs",
     "esModuleInterop": true,
     "pretty": true,
@@ -17,7 +17,6 @@
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "**/*.test.ts"
+    "dist"
   ]
 }

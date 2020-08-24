@@ -5,6 +5,7 @@
 /jest.config.js
 /.github
 
+*.test.js
 *.ts
 !*.d.ts
 *.md
