@@ -56,6 +56,22 @@ export default function rds(...dbname: string[]): Component {
       }),
     );
 
+    dbname.forEach(dbname =>
+      container.addWarningMonitor(`RDS CPU use is high on ${dbname}`, {
+        type: "metric alert",
+        query: `avg(last_5m):avg:aws.rds.cpuutilization{name:${dbname}} by {host} > 80`,
+        message: `CPU use is high on database instance ${dbname.split(":")[1]}`,
+        options: {
+          new_host_delay: 300,
+          include_tags: false,
+          thresholds: {
+            critical: 80,
+            warning: 60,
+          },
+        },
+      }),
+    );
+
     container.addWidget("Burst balance used", {
       type: "timeseries",
       requests: dbname.map(dbname => ({
