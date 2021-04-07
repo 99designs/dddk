@@ -81,12 +81,12 @@ export default function alb(name: string, titlePrefix: string = ""): Component {
       type: "timeseries",
       requests: [
         {
-          q: `sum:aws.elb.httpcode_target_2xx{name:${name}}.as_rate(), sum:aws.elb.httpcode_target_3xx{name:${name}}.as_rate(), sum:aws.elb.httpcode_target_5xx{name:${name}}.as_rate()`,
+          q: `sum:aws.elb.httpcode_target_2xx{name:${name}}.as_rate(), sum:aws.elb.httpcode_target_3xx{name:${name}}.as_rate(), sum:aws.elb.httpcode_target_4xx{name:${name}}.as_rate(), sum:aws.elb.httpcode_target_5xx{name:${name}}.as_rate()`,
           display_type: "area",
           style: trafficStyle,
         },
         {
-          q: `week_before(sum:aws.elb.httpcode_target_2xx{name:${name}}.as_rate()) + week_before(sum:aws.elb.httpcode_target_3xx{name:${name}}.as_rate()) + week_before(sum:aws.elb.httpcode_target_5xx{name:${name}}.as_rate())`,
+          q: `week_before(sum:aws.elb.httpcode_target_2xx{name:${name}}.as_rate()) + week_before(sum:aws.elb.httpcode_target_3xx{name:${name}}.as_rate()) + week_before(sum:aws.elb.httpcode_target_4xx{name:${name}}.as_rate()) + week_before(sum:aws.elb.httpcode_target_5xx{name:${name}}.as_rate())`,
           display_type: "line",
           style: weekBeforeStyle,
         },
