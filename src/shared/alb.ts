@@ -32,7 +32,7 @@ export default function alb(name: string, titlePrefix: string = ""): Component {
       type: "timeseries",
       requests: [
         {
-          q: `sum:aws.elb.healthy_host_count{name:${name}}.rollup(sum), sum:aws.elb.un_healthy_host_count{name:${name}}.rollup(sum)`,
+          q: `sum:aws.elb.healthy_host_count{name:${name}}.rollup(min), sum:aws.elb.un_healthy_host_count{name:${name}}.rollup(max)`,
           display_type: "area",
           style: trafficStyle,
         },
