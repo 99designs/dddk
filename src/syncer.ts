@@ -140,10 +140,10 @@ export class Syncer {
   }
 
   async deleteUnseen() {
-    await this.state.synthetics.deleteUnseen();
-    await this.state.slos.deleteUnseen();
-    await this.state.monitors.deleteUnseen();
     await this.state.dashboards.deleteUnseen();
+    await this.state.slos.deleteUnseen();
+    await this.state.synthetics.deleteUnseen();
+    await this.state.monitors.deleteUnseen();
   }
 
   get lock(): LockFile {
