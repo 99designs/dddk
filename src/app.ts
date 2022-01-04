@@ -46,20 +46,17 @@ export class App implements Container {
     });
   }
 
-  injectAlertContactToNonWarningNotifications(message) {
-    const { alertContact } = this.team;
-
-    return stripIndent(
-      message.replace(/\{\{\/(?!is_warning)/g, ` ${alertContact}{{/`),
-    );
-  }
-
   addOutageMonitor(name: string, { tags, message, ...monitor }: Monitor) {
+    const messageWithAlertContactInserted = message.replace(
+      /\{\{\/(?!is_warning)/g,
+      ` ${this.team.alertContact}{{/`,
+    );
+
     this.outageMonitors.push({
       ...monitor,
       name: name,
       message:
-        this.injectAlertContactToNonWarningNotifications(message) +
+        stripIndent(messageWithAlertContactInserted) +
         " " +
         this.team.warningContact,
       tags: tags ? tags : ["service:" + this.name.toLowerCase()],
