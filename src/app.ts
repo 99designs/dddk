@@ -48,8 +48,8 @@ export class App implements Container {
 
   addOutageMonitor(name: string, { tags, message, ...monitor }: Monitor) {
     const messageWithAlertContactInserted = message.replace(
-      /\{\{\/(?!is_warning)/g,
-      ` ${this.team.alertContact}{{/`,
+      /\{\{\/is_(?!warning)/g,
+      ` ${this.team.alertContact}{{/is_`,
     );
 
     this.outageMonitors.push({
