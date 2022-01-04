@@ -1,8 +1,8 @@
 import { App } from "./app";
 
-let app;
-
 describe("outage monitor", () => {
+  let app;
+
   beforeEach(() => {
     app = new App({
       name: "testService",
