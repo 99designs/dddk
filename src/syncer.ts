@@ -30,7 +30,7 @@ export class Syncer {
     this.state = state;
   }
 
-  // create a new Client instance based on the local lock file and and fetching
+  // create a new Client instance based on the local lock file and fetching
   // refs from datadog.
   static async create(client: Client, lockFile: LockFile) {
     let lock: State = {
