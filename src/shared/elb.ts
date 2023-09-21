@@ -34,10 +34,10 @@ export default function elb(name: string): Component {
         {{/is_alert}}`,
       options: {
         include_tags: false,
-        no_data_timeframe: 900,
+        no_data_timeframe: 15, // in minutes
         notify_no_data: true,
-        new_host_delay: 300,
-        evaluation_delay: 900,
+        new_host_delay: 300, // in seconds
+        evaluation_delay: 900, // in seconds
         thresholds: {
           critical: 1,
         },
@@ -53,10 +53,10 @@ export default function elb(name: string): Component {
         {{/is_alert}}`,
       options: {
         include_tags: false,
-        no_data_timeframe: 900,
+        no_data_timeframe: 15, // in minutes
         notify_no_data: true,
-        new_host_delay: 300,
-        evaluation_delay: 900,
+        new_host_delay: 300, // in seconds
+        evaluation_delay: 900, // in seconds
         thresholds: {
           critical: 0.05,
         },
