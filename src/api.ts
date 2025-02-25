@@ -24,6 +24,17 @@ export interface MetricMonitor {
   options: MonitorOptions;
 }
 
+export interface CompositeMonitor {
+  id?: number;
+  type: "composite";
+  query: string;
+  name?: string;
+  message: string;
+  tags?: string[];
+  modified?: Date;
+  options: MonitorOptions;
+}
+
 export interface MonitorOptions {
   notify_audit?: boolean;
   locked?: boolean;
@@ -49,7 +60,7 @@ export interface MonitorOptions {
   };
 }
 
-export type Monitor = QueryMonitor | MetricMonitor;
+export type Monitor = QueryMonitor | MetricMonitor | CompositeMonitor;
 
 export interface Threshold {
   timeframe: string;
