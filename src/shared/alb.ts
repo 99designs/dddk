@@ -10,7 +10,7 @@ export default function alb(name: string, titlePrefix: string = ""): Component {
       type: "timeseries",
       requests: [
         {
-          q: `max:aws.elb.httpcode_target_5xx{name:${name}}.as_count()`,
+          q: `max:aws.applicationelb.httpcode_target_5xx{name:${name}}.as_count()`,
           display_type: "bars",
           style: errorStyle,
         },
@@ -21,7 +21,7 @@ export default function alb(name: string, titlePrefix: string = ""): Component {
       type: "timeseries",
       requests: [
         {
-          q: `max:aws.elb.httpcode_target_4xx{name:${name}}.as_count()`,
+          q: `max:aws.applicationelb.httpcode_target_4xx{name:${name}}.as_count()`,
           display_type: "bars",
           style: errorStyle,
         },
@@ -32,7 +32,7 @@ export default function alb(name: string, titlePrefix: string = ""): Component {
       type: "timeseries",
       requests: [
         {
-          q: `sum:aws.elb.healthy_host_count{name:${name}}.rollup(min), sum:aws.elb.un_healthy_host_count{name:${name}}.rollup(max)`,
+          q: `sum:aws.applicationelb.healthy_host_count{name:${name}}.rollup(min), sum:aws.applicationelb.un_healthy_host_count{name:${name}}.rollup(max)`,
           display_type: "area",
           style: trafficStyle,
         },
@@ -41,7 +41,7 @@ export default function alb(name: string, titlePrefix: string = ""): Component {
 
     container.addOutageMonitor(`No healthy hosts on alb ${name}`, {
       type: "metric alert",
-      query: `min(last_5m):sum:aws.elb.healthy_host_count{name:${name}} < 1`,
+      query: `min(last_5m):sum:aws.applicationelb.healthy_host_count{name:${name}} < 1`,
       message: `
         {{#is_alert}}
           Not enough healthy hosts on alb ${name}!
@@ -60,7 +60,7 @@ export default function alb(name: string, titlePrefix: string = ""): Component {
 
     container.addWarningMonitor(`Unheathy host count is high on alb ${name}`, {
       type: "metric alert",
-      query: `max(last_5m):sum:aws.elb.un_healthy_host_count{name:${name}} > 0.05`,
+      query: `max(last_5m):sum:aws.applicationelb.un_healthy_host_count{name:${name}} > 0.05`,
       message: `
         {{#is_alert}}
           There are unhealthy hosts on alb ${name}!
@@ -81,12 +81,12 @@ export default function alb(name: string, titlePrefix: string = ""): Component {
       type: "timeseries",
       requests: [
         {
-          q: `sum:aws.elb.httpcode_target_2xx{name:${name}}.as_rate(), sum:aws.elb.httpcode_target_3xx{name:${name}}.as_rate(), sum:aws.elb.httpcode_target_4xx{name:${name}}.as_rate(), sum:aws.elb.httpcode_target_5xx{name:${name}}.as_rate()`,
+          q: `sum:aws.applicationelb.httpcode_target_2xx{name:${name}}.as_rate(), sum:aws.applicationelb.httpcode_target_3xx{name:${name}}.as_rate(), sum:aws.applicationelb.httpcode_target_4xx{name:${name}}.as_rate(), sum:aws.applicationelb.httpcode_target_5xx{name:${name}}.as_rate()`,
           display_type: "area",
           style: trafficStyle,
         },
         {
-          q: `week_before(sum:aws.elb.httpcode_target_2xx{name:${name}}.as_rate()) + week_before(sum:aws.elb.httpcode_target_3xx{name:${name}}.as_rate()) + week_before(sum:aws.elb.httpcode_target_4xx{name:${name}}.as_rate()) + week_before(sum:aws.elb.httpcode_target_5xx{name:${name}}.as_rate())`,
+          q: `week_before(sum:aws.applicationelb.httpcode_target_2xx{name:${name}}.as_rate()) + week_before(sum:aws.applicationelb.httpcode_target_3xx{name:${name}}.as_rate()) + week_before(sum:aws.applicationelb.httpcode_target_4xx{name:${name}}.as_rate()) + week_before(sum:aws.applicationelb.httpcode_target_5xx{name:${name}}.as_rate())`,
           display_type: "line",
           style: weekBeforeStyle,
         },
