@@ -1,6 +1,6 @@
 {
   "name": "dddk",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "description": "Datadog Development Kit",
   "main": "dist/src/index.js",
   "bin": {
