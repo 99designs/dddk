@@ -2,7 +2,7 @@ import * as api from "./api";
 import got, { Method } from "got";
 import log from "./log";
 
-// Most of the datadog api filters dont work or are broken in weird ways.
+// Most of the datadog api filters don't work or are broken in weird ways.
 // this abstracts over the requirements, and most of the time we end up
 // fetching the entire collection and filtering ourselves.
 // Hopefully in the future these get fixed and we can reduce the amount of
